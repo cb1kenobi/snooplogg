@@ -61,7 +61,7 @@ log.info('bow', 'wow', 'wow'); // writes to stdout/stderr + all pipes
 import snooplogg from 'snooplogg';
 
 const log = snooplogg
-	.pipe(someStream);
+	.pipe(someWritableStream);
 
 log.info('yippy', 'yo');
 ```

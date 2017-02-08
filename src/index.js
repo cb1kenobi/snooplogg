@@ -71,10 +71,6 @@ class Logger extends Function {
 	 * @type {Boolean}
 	 */
 	get enabled() {
-		if (!this._namespace) {
-			return true;
-		}
-
 		// find the top most parent which should be the global SnoopLogg instance
 		let parent = this;
 		while (parent._parent) {
@@ -82,7 +78,13 @@ class Logger extends Function {
 		}
 
 		const allow = parent._allow;
-		if (allow === '*') {
+		if (allow === null) {
+			// all logging is silenced
+			return false;
+		}
+
+		if (!this._namespace || allow === '*') {
+			// nothing to filter
 			return true;
 		}
 
@@ -160,7 +162,7 @@ class SnoopLogg extends Logger {
 				 * The default theme to apply if a stream didn't specify one.
 				 * @type {String}
 				 */
-				_defaultTheme: { writable: true, value: 'detailed' },
+				_defaultTheme: { writable: true, value: 'minimal' },
 
 				/**
 				 * A lazy unique identifier for this `SnoopLogg` instance. This
@@ -425,33 +427,35 @@ class SnoopLogg extends Logger {
 			fd:        opts.fd || 0
 		};
 
-		const id = this._id;
-		const dispatch = this.dispatch.bind(this);
+		if (!Object.getOwnPropertyDescriptor(Logger.prototype, name)) {
+			const id = this._id;
+			const dispatch = this.dispatch.bind(this);
 
-		// wire up the actual log type function
-		// note: this has to use a getter so that `this` can be resolved at
-		// runtime because if you `import { info } from 'SnoopLogg'`, `info()`
-		// gets forced into the global context.
-		Object.defineProperty(Logger.prototype, name, {
-			enumerable: true,
-			get: function () {
-				const value = (...args) => {
-					dispatch({
-						id,
-						args,
-						...type,
-						ns: this._namespace,
-						nsStyle: this._namespaceStyle,
-						ts: new Date,
-						enabled: this.enabled
-					});
-				};
+			// wire up the actual log type function
+			// note: this has to use a getter so that `this` can be resolved at
+			// runtime because if you `import { info } from 'SnoopLogg'`, `info()`
+			// gets forced into the global context.
+			Object.defineProperty(Logger.prototype, name, {
+				enumerable: true,
+				get: function () {
+					const value = (...args) => {
+						dispatch({
+							id,
+							args,
+							...type,
+							ns: this._namespace,
+							nsStyle: this._namespaceStyle,
+							ts: new Date,
+							enabled: this.enabled
+						});
+					};
 
-				Object.defineProperty(this, name, { enumerable: true, value });
+					Object.defineProperty(this, name, { enumerable: true, value });
 
-				return value;
-			}
-		});
+					return value;
+				}
+			});
+		}
 
 		return this;
 	}
@@ -777,75 +781,79 @@ class StdioStream extends Writable {
 	}
 }
 
+function createInstanceWithDefaults(cfg = {}) {
+	return new SnoopLogg()
+		.config(cfg)
+
+		.type('log',   { style: 'gray', label: null })
+		.type('trace', { style: 'gray' })
+		.type('debug', { style: 'magenta' })
+		.type('info',  { style: 'green' })
+		.type('warn',  { style: 'yellow',      fd: 1 })
+		.type('error', { style: 'red',         fd: 1 })
+		.type('fatal', { style: 'white,bgRed', fd: 1 })
+
+		.style('bold',          chalk.bold)
+		.style('dim',           chalk.dim)
+		.style('italic',        chalk.italic)
+		.style('underline',     chalk.underline)
+		.style('inverse',       chalk.inverse)
+		.style('hidden',        chalk.hidden)
+		.style('strikethrough', chalk.strikethrough)
+
+		.style('black',         chalk.black)
+		.style('red',           chalk.red)
+		.style('black',         chalk.black)
+		.style('green',         chalk.green)
+		.style('yellow',        chalk.yellow)
+		.style('blue',          chalk.blue)
+		.style('magenta',       chalk.magenta)
+		.style('cyan',          chalk.cyan)
+		.style('white',         chalk.white)
+		.style('gray',          chalk.gray)
+
+		.style('bgBlack',       chalk.bgBlack)
+		.style('bgRed',         chalk.bgRed)
+		.style('bgGreen',       chalk.bgGreen)
+		.style('bgYellow',      chalk.bgYellow)
+		.style('bgBlue',        chalk.bgBlue)
+		.style('bgMagenta',     chalk.bgMagenta)
+		.style('bgCyan',        chalk.bgCyan)
+		.style('bgWhite',       chalk.bgWhite)
+
+		.style('uppercase',     s => String(s).toUpperCase())
+		.style('lowercase',     s => String(s).toLowerCase())
+		.style('brackets',      s => `[${s}]`)
+		.style('parens',        s => `(${s})`)
+		.style('auto',          function (text) {
+			let hash = 0;
+			for (const i in text) {
+				hash = (((hash << 5) - hash) + text.charCodeAt(i)) | 0;
+			}
+			const color = this._colors[Math.abs(hash) % this._colors.length];
+			return this._styles[color](text);
+		})
+
+		.theme('detailed', function (msg) {
+			const ns = this.applyStyle(msg.ns, msg.nsStyle || 'auto');
+			const type = this.applyStyle(msg.typeLabel, msg.typeStyle);
+			const prefix = this.applyStyle(msg.ts.toISOString(), 'magenta') + ' ' + (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
+			return util.format.apply(null, msg.args).split('\n').map(s => prefix + s).join('\n') + '\n';
+		})
+		.theme('standard', msg => {
+			const ns = this.applyStyle(msg.ns, msg.nsStyle || 'auto');
+			const type = this.applyStyle(msg.typeLabel, msg.typeStyle);
+			const prefix = (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
+			return util.format.apply(null, msg.args).split('\n').map(s => prefix + s).join('\n') + '\n';
+		})
+		.theme('minimal', msg => {
+			return util.format.apply(null, msg.args) + '\n';
+		});
+}
+
 // create the global instance and wire up the built-in types
-const instance = new SnoopLogg()
-	.type('log',   { style: 'gray', label: null })
-	.type('trace', { style: 'gray' })
-	.type('debug', { style: 'magenta' })
-	.type('info',  { style: 'green' })
-	.type('warn',  { style: 'yellow', fd: 1 })
-	.type('error', { style: 'red',    fd: 1 })
-	.type('fatal', { style: 'red',    fd: 1 })
-
-	.style('bold',          chalk.bold)
-	.style('dim',           chalk.dim)
-	.style('italic',        chalk.italic)
-	.style('underline',     chalk.underline)
-	.style('inverse',       chalk.inverse)
-	.style('hidden',        chalk.hidden)
-	.style('strikethrough', chalk.strikethrough)
-
-	.style('black',         chalk.black)
-	.style('red',           chalk.red)
-	.style('black',         chalk.black)
-	.style('green',         chalk.green)
-	.style('yellow',        chalk.yellow)
-	.style('blue',          chalk.blue)
-	.style('magenta',       chalk.magenta)
-	.style('cyan',          chalk.cyan)
-	.style('white',         chalk.white)
-	.style('gray',          chalk.gray)
-
-	.style('bgBlack',       chalk.bgBlack)
-	.style('bgRed',         chalk.bgRed)
-	.style('bgGreen',       chalk.bgGreen)
-	.style('bgYellow',      chalk.bgYellow)
-	.style('bgBlue',        chalk.bgBlue)
-	.style('bgMagenta',     chalk.bgMagenta)
-	.style('bgCyan',        chalk.bgCyan)
-	.style('bgWhite',       chalk.bgWhite)
-
-	.style('uppercase',     s => String(s).toUpperCase())
-	.style('lowercase',     s => String(s).toLowerCase())
-	.style('brackets',      s => `[${s}]`)
-	.style('parens',        s => `(${s})`)
-	.style('auto',          function (text) {
-		let hash = 0;
-		for (const i in text) {
-			hash = (((hash << 5) - hash) + text.charCodeAt(i)) | 0;
-		}
-		const color = this._colors[Math.abs(hash) % this._colors.length];
-		return this._styles[color](text);
-	})
-
-	.theme('detailed', function (msg) {
-		const ns = this.applyStyle(msg.ns, msg.nsStyle || 'auto');
-		const type = this.applyStyle(msg.typeLabel, msg.typeStyle);
-		const prefix = this.applyStyle(msg.ts.toISOString(), 'magenta') + ' ' + (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
-		return util.format.apply(null, msg.args).split('\n').map(s => prefix + s).join('\n') + '\n';
-	})
-	.theme('standard', msg => {
-		const ns = this.applyStyle(msg.ns, msg.nsStyle || 'auto');
-		const type = this.applyStyle(msg.typeLabel, msg.typeStyle);
-		const prefix = (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
-		return util.format.apply(null, msg.args).split('\n').map(s => prefix + s).join('\n') + '\n';
-	})
-	.theme('minimal', msg => {
-		return util.format.apply(null, msg.args) + '\n';
-	})
-
+const instance = createInstanceWithDefaults()
 	.enable(process.env.DEBUG)
-
 	.pipe(new StdioStream, { flush: true });
 
 // bind all methods to the main instance
@@ -856,5 +864,7 @@ for (const i of Object.getOwnPropertyNames(SnoopLogg.prototype)) {
 }
 
 exports = module.exports = instance;
+
+export { createInstanceWithDefaults, Logger, SnoopLogg };
 
 export default instance;
