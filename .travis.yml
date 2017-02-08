@@ -1,0 +1,13 @@
+language: node_js
+node_js:
+  - "4"
+  - "6"
+  - "7"
+os: linux
+sudo: false
+install: npm install -g yarn && yarn
+before_script: sh -c "git log | head -12"
+script: npm run coverage
+after_success:
+  - coveralls < ./coverage/lcov.info
+  - CODECLIMATE_REPO_TOKEN= codeclimate-test-reporter < ./coverage/lcov.info

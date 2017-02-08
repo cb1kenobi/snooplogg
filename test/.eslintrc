@@ -1,0 +1,18 @@
+{
+    "globals": {
+        "after": false,
+        "afterEach": false,
+        "before": false,
+        "beforeEach": false,
+        "console": false,
+        "describe": false,
+        "expect": false,
+        "it": false,
+        "spy": false,
+        "stub": false,
+        "sinon": false
+    },
+    "rules": {
+        "no-unused-vars": 0
+    }
+}

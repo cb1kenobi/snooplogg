@@ -1,0 +1,15 @@
+._*
+.babelrc
+.codeclimate.yml
+.DS_Store
+.eslintrc
+.git*
+.travis.yml
+coverage
+docs
+gulpfile.js
+node_modules
+npm-debug.log
+yarn-error.log
+src
+test

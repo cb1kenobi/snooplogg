@@ -1,0 +1,38 @@
+{
+    "env": {
+        "es6": true,
+        "node": true
+    },
+    "extends": "eslint:recommended",
+    "parser": "babel-eslint",
+    "parserOptions": {
+        "ecmaVersion": 7,
+        "sourceType": "module"
+    },
+    "root": true,
+    "rules": {
+        "indent": [
+            2,
+            "tab",
+            { "SwitchCase": 1 }
+        ],
+        "quotes": [
+            2,
+            "single"
+        ],
+        "linebreak-style": [
+            2,
+            "unix"
+        ],
+        "semi": [
+            2,
+            "always"
+        ],
+        "no-console": 0,
+        "no-mixed-spaces-and-tabs": 0,
+        "no-cond-assign": 0,
+        "no-unused-vars": 0,
+        "constructor-super": 0,
+        "no-class-assign": 0
+    }
+}

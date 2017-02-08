@@ -1,0 +1,65 @@
+{
+  "name": "snooplogg",
+  "version": "0.1.0",
+  "description": "Your mind on your logs and your logs on your mind",
+  "main": "./dist/index.js",
+  "author": "Chris Barber <chris@cb1inc.com> (https://github.com/cb1kenobi)",
+  "license": "MIT",
+  "keywords": [
+    "log",
+    "logger",
+    "logging",
+    "logs",
+    "levels",
+    "debug",
+    "console"
+  ],
+  "scripts": {
+    "build": "gulp build",
+    "coverage": "gulp coverage",
+    "docs": "gulp docs",
+    "prepublish": "gulp build",
+    "test": "gulp test"
+  },
+  "dependencies": {
+    "figures": "^2.0.0",
+    "humanize": "^0.0.9",
+    "moment": "^2.17.1",
+    "source-map-support": "^0.4.11",
+    "supports-color": "^3.2.3"
+  },
+  "devDependencies": {
+    "babel-eslint": "^7.1.1",
+    "babel-plugin-transform-class-properties": "^6.22.0",
+    "babel-plugin-transform-es2015-modules-commonjs": "^6.22.0",
+    "babel-plugin-transform-object-rest-spread": "^6.22.0",
+    "chai": "^3.5.0",
+    "codeclimate-test-reporter": "^0.4.0",
+    "coveralls": "^2.11.16",
+    "del": "^2.2.2",
+    "esdoc-es7-plugin": "^0.0.3",
+    "gulp": "^3.9.1",
+    "gulp-babel": "^6.1.2",
+    "gulp-babel-istanbul": "^1.6.0",
+    "gulp-debug": "^3.0.0",
+    "gulp-esdoc": "^0.4.0",
+    "gulp-eslint": "^3.0.1",
+    "gulp-filter": "^5.0.0",
+    "gulp-inject-modules": "^1.0.0",
+    "gulp-load-plugins": "^1.5.0",
+    "gulp-mocha": "^3.0.1",
+    "gulp-plumber": "^1.1.0",
+    "gulp-sourcemaps": "^2.4.1",
+    "sinon": "^1.17.7",
+    "sinon-chai": "^2.8.0"
+  },
+  "homepage": "https://github.com/cb1kenobi/snooplogg",
+  "bugs": "https://github.com/cb1kenobi/snooplogg/issues",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/cb1kenobi/snooplogg.git"
+  },
+  "engines": {
+    "node": ">=4.0.0"
+  }
+}
