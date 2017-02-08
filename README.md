@@ -1,15 +1,3 @@
-TODO
-
-formatters (themes)
-styles - highlight(), etc
-per stream middleware
-config() - resize buffer
-update readme
-unit tests
-publish!
-
-
-
 # SnoopLogg
 
 [![NPM Version][npm-image ]][npm-url]
