@@ -24,13 +24,13 @@ class Logger extends Function {
 	 * up to the theme as to how the namespace is styled.
 	 * @access public
 	 */
-	constructor(namespace, parent = null, style = null) {
+	constructor(namespace, parent = null, root = null, style = null) {
 		const ns = (parent && parent._ns || []).concat(namespace);
 
 		return Object.defineProperties(
 			Object.setPrototypeOf(
 				function createNamespace(namespace, style) {
-					return new Logger(namespace, createNamespace, style);
+					return new Logger(namespace, createNamespace, root, style);
 				},
 				Logger.prototype
 			), {
@@ -60,7 +60,13 @@ class Logger extends Function {
 				 * namespace.
 				 * @type {?Logger}
 				 */
-				_parent: { writable: true, value: parent }
+				_parent: { writable: true, value: parent },
+
+				/**
+				 * A reference to the top-level SnoopLogg instance.
+				 * @type {?SnoopLogg}
+				 */
+				_root: { value: root }
 			}
 		);
 	}
@@ -72,10 +78,7 @@ class Logger extends Function {
 	 */
 	get enabled() {
 		// find the top most parent which should be the global SnoopLogg instance
-		let parent = this;
-		while (parent._parent) {
-			parent = parent._parent;
-		}
+		let parent = this._root || this;
 
 		const allow = parent._allow;
 		if (allow === null) {
@@ -119,7 +122,7 @@ class SnoopLogg extends Logger {
 		return Object.defineProperties(
 			Object.setPrototypeOf(
 				function createNamespace(namespace) {
-					return new Logger(namespace, createNamespace);
+					return new Logger(namespace, createNamespace, createNamespace);
 				},
 				SnoopLogg.prototype
 			), {
@@ -428,9 +431,6 @@ class SnoopLogg extends Logger {
 		};
 
 		if (!Object.getOwnPropertyDescriptor(Logger.prototype, name)) {
-			const id = this._id;
-			const dispatch = this.dispatch.bind(this);
-
 			// wire up the actual log type function
 			// note: this has to use a getter so that `this` can be resolved at
 			// runtime because if you `import { info } from 'SnoopLogg'`, `info()`
@@ -439,8 +439,8 @@ class SnoopLogg extends Logger {
 				enumerable: true,
 				get: function () {
 					const value = (...args) => {
-						dispatch({
-							id,
+						(this._root || this).dispatch({
+							id: (this._root || this)._id,
 							args,
 							...type,
 							ns: this._namespace,
@@ -449,9 +449,7 @@ class SnoopLogg extends Logger {
 							enabled: this.enabled
 						});
 					};
-
 					Object.defineProperty(this, name, { enumerable: true, value });
-
 					return value;
 				}
 			});
@@ -781,10 +779,8 @@ class StdioStream extends Writable {
 	}
 }
 
-function createInstanceWithDefaults(cfg = {}) {
+function createInstanceWithDefaults() {
 	return new SnoopLogg()
-		.config(cfg)
-
 		.type('log',   { style: 'gray', label: null })
 		.type('trace', { style: 'gray' })
 		.type('debug', { style: 'magenta' })
@@ -852,19 +848,21 @@ function createInstanceWithDefaults(cfg = {}) {
 }
 
 // create the global instance and wire up the built-in types
-const instance = createInstanceWithDefaults()
+let instance = createInstanceWithDefaults()
 	.enable(process.env.DEBUG)
 	.pipe(new StdioStream, { flush: true });
+
+const snooplogg = instance.bind(instance);
 
 // bind all methods to the main instance
 for (const i of Object.getOwnPropertyNames(SnoopLogg.prototype)) {
 	if (typeof SnoopLogg.prototype[i] === 'function') {
-		instance[i] = instance[i].bind(instance);
+		snooplogg[i] = instance[i].bind(instance);
 	}
 }
 
-exports = module.exports = instance;
+exports = module.exports = snooplogg;
 
 export { createInstanceWithDefaults, Logger, SnoopLogg };
 
-export default instance;
+export default snooplogg;
