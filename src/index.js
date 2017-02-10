@@ -150,7 +150,7 @@ class SnoopLogg extends Logger {
 				 * The default theme to apply if a stream didn't specify one.
 				 * @type {String}
 				 */
-				_defaultTheme: { writable: true, value: 'minimal' },
+				_defaultTheme: { writable: true, value: 'standard' },
 
 				/**
 				 * A lazy unique identifier for this `SnoopLogg` instance. This
@@ -807,20 +807,18 @@ function createInstanceWithDefaults() {
 
 // create the global instance and wire up the built-in types
 let instance = createInstanceWithDefaults()
-	.enable(process.env.DEBUG)
+	.enable(process.env.SNOOPLOGG || process.env.DEBUG)
 	.pipe(new StdioStream, { flush: true });
-
-const snooplogg = instance.bind(instance);
 
 // bind all methods to the main instance
 for (const i of Object.getOwnPropertyNames(SnoopLogg.prototype)) {
 	if (typeof SnoopLogg.prototype[i] === 'function') {
-		snooplogg[i] = instance[i].bind(instance);
+		instance[i] = instance[i].bind(instance);
 	}
 }
 
-exports = module.exports = snooplogg;
+exports = module.exports = instance;
 
-export default snooplogg;
+export default instance;
 
 export { createInstanceWithDefaults, Format, Logger, SnoopLogg, StripColors };

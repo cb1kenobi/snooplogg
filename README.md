@@ -20,13 +20,14 @@ Laid back logging.
  * Ability to snoop on other snooplogg instances nested in dependencies
  * Pipe messages to one or more streams
  * Namespacing
- * Filter messages using the `DEBUG` environment variable
+ * Filter messages using the `DEBUG` (or `SNOOPLOGG`) environment variable
  * Includes helper libraries for your convenience
    * [chalk](https://www.npmjs.com/pacakge/chalk)
    * [figures](https://www.npmjs.com/package/figures) (exported as `symbols`)
    * [humanize](https://www.npmjs.com/package/humanize)
    * [moment](https://www.npmjs.com/package/moment)
- * Similar API to [TJ's debug](https://www.npmjs.com/package/debug)
+ * Similar API to [TJ's debug](https://www.npmjs.com/package/debug):
+   * `const debug = snooplogg('myapp').log;`
 
 ## Examples
 
@@ -78,6 +79,9 @@ $ DEBUG=izzle node loggfather.js
 > node loggfather.js
 ```
 
+> Note: You may also use the `SNOOPLOGG` environment variable to avoid conflicts
+> with other libraries that use [debug](https://www.npmjs.com/package/debug)
+
 Listen for messages from all `SnoopLogg` instances, even from other
 dependencies.
 
@@ -110,6 +114,18 @@ const log = logg();
 log.jin('parents ain\'t home');
 log.juice('too much drama', true);
 ```
+
+### API
+
+#### `snooplogg()`
+
+Creates a namespaced logger as well as defines the global namespaced logger.
+
+#### `snooplogg.log(msg)`
+
+Outputs a message using the standard `console.log()` format syntax.
+
+*More docs to come in the future!*
 
 ## License
 

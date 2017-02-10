@@ -622,7 +622,7 @@ describe('SnoopLogg', () => {
 		class MockOutputStream extends Writable {
 			_write(msg, enc, cb) {
 				count++;
-				expect(msg.toString()).to.equal('foo() test\n');
+				expect(msg.toString()).to.equal('foo foo() test\n');
 				cb();
 			}
 		}
