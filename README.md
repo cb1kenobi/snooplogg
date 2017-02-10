@@ -1,12 +1,12 @@
 # SnoopLogg
 
-[![NPM Version][npm-image ]][npm-url]
-[![NPM Downloads][downloads-image ]][downloads-url]
-[![Travis CI Build][travis-image ]][travis-url]
-[![Test Coverage][coveralls-image ]][coveralls-url]
-[![Code Climate][codeclimate-image ]][codeclimate-url]
-[![Deps][david-image ]][david-url]
-[![Dev Deps][david-dev-image ] ][david-dev-url]
+[![NPM Version][npm-image]][npm-url]
+[![NPM Downloads][downloads-image]][downloads-url]
+[![Travis CI Build][travis-image]][travis-url]
+[![Test Coverage][coveralls-image]][coveralls-url]
+[![Code Climate][codeclimate-image]][codeclimate-url]
+[![Deps][david-image]][david-url]
+[![Dev Deps][david-dev-image]][david-dev-url]
 
 Laid back logging.
 
