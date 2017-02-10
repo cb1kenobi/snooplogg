@@ -5,7 +5,7 @@ node_js:
   - "7"
 os: linux
 sudo: false
-install: npm install -g yarn && yarn
+install: npm install
 before_script: sh -c "git log | head -12"
 script: npm run coverage
 after_success:

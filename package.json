@@ -1,6 +1,6 @@
 {
   "name": "snooplogg",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Your mind on your logs and your logs on your mind",
   "main": "./dist/index.js",
   "author": "Chris Barber <chris@cb1inc.com> (https://github.com/cb1kenobi)",
@@ -25,13 +25,16 @@
     "figures": "^2.0.0",
     "humanize": "^0.0.9",
     "moment": "^2.17.1",
+    "nanobuffer": "^1.0.0",
     "source-map-support": "^0.4.11",
     "supports-color": "^3.2.3"
   },
   "devDependencies": {
     "babel-eslint": "^7.1.1",
     "babel-plugin-transform-class-properties": "^6.22.0",
+    "babel-plugin-transform-es2015-destructuring": "^6.22.0",
     "babel-plugin-transform-es2015-modules-commonjs": "^6.22.0",
+    "babel-plugin-transform-es2015-parameters": "^6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.22.0",
     "chai": "^3.5.0",
     "codeclimate-test-reporter": "^0.4.0",

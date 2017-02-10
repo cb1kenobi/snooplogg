@@ -26,7 +26,7 @@ Laid back logging.
    * [figures](https://www.npmjs.com/package/figures) (exported as `symbols`)
    * [humanize](https://www.npmjs.com/package/humanize)
    * [moment](https://www.npmjs.com/package/moment)
- * API compatible with [TJ's debug](https://www.npmjs.com/package/debug)
+ * Similar API to [TJ's debug](https://www.npmjs.com/package/debug)
 
 ## Examples
 
@@ -78,7 +78,8 @@ $ DEBUG=izzle node loggfather.js
 > node loggfather.js
 ```
 
-Listen for messages from all snooplogg instances.
+Listen for messages from all `SnoopLogg` instances, even from other
+dependencies.
 
 ```javascript
 import { snoop, logg } from 'snooplogg';

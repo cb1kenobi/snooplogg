@@ -3,6 +3,7 @@ if (!Error.prepareStackTrace) {
 }
 
 import chalk from 'chalk';
+import NanoBuffer from 'nanobuffer';
 import supportsColor from 'supports-color';
 import util from 'util';
 
@@ -77,10 +78,9 @@ class Logger extends Function {
 	 * @type {Boolean}
 	 */
 	get enabled() {
-		// find the top most parent which should be the global SnoopLogg instance
-		let parent = this._root || this;
+		let root = this._root || this;
 
-		const allow = parent._allow;
+		const allow = root._allow;
 		if (allow === null) {
 			// all logging is silenced
 			return false;
@@ -91,8 +91,8 @@ class Logger extends Function {
 			return true;
 		}
 
-		const ignore = parent.ignore;
-		if (allow && allow.test(this._namespace) && (!ignore || ignore.test(this._namespace))) {
+		const ignore = root._ignore;
+		if (allow && allow.test(this._namespace) && (!ignore || !ignore.test(this._namespace))) {
 			return true;
 		}
 
@@ -137,22 +137,7 @@ class SnoopLogg extends Logger {
 				 * The log message buffer.
 				 * @type {Array.<Object>}
 				 */
-				_buffer: { writable: true, value: Array(250) },
-
-				/**
-				 * The index of the oldest message in the buffer. This marks the
-				 * index where the log system should begin outputting messages
-				 * when flushing the buffer to new streams.
-				 * @type {Number}
-				 */
-				_bufferStart: { writable: true, value: 0 },
-
-				/**
-				 * The index of the newest message in the buffer where new log
-				 * messages should be inserted.
-				 * @type {Number}
-				 */
-				_bufferEnd: { writable: true, value: 0 },
+				_buffer: { writable: true, value: new NanoBuffer(250) },
 
 				/**
 				 * An array of available colors to choose from when rendering
@@ -182,12 +167,6 @@ class SnoopLogg extends Logger {
 				_ignore: { writable: true, value: null },
 
 				/**
-				 * The maximum size of the log message buffer.
-				 * @type {Number}
-				 */
-				_maxBufferSize: { writable: true, value: 250 },
-
-				/**
 				 * A list of middlewares to call and process log messages prior
 				 * to dispatching.
 				 * @type {Array.<Function>}
@@ -204,7 +183,7 @@ class SnoopLogg extends Logger {
 				 * A map of style names and their functions.
 				 * @type {Object}
 				 */
-				_styles: { value: {} },
+				styles: { enumerable: true, value: {} },
 
 				/**
 				 * A list of themes and the function to apply them.
@@ -311,7 +290,7 @@ class SnoopLogg extends Logger {
 		}
 
 		if (opts.colors) {
-			if (typeof opts.color !== 'string' && !Array.isArray(opts.colors)) {
+			if (typeof opts.colors !== 'string' && !Array.isArray(opts.colors)) {
 				throw new TypeError('Expected colors to be a string or array');
 			}
 			this._colors = typeof opts.colors === 'string' ? opts.colors.split(',') : opts.colors;
@@ -324,27 +303,17 @@ class SnoopLogg extends Logger {
 			this._defaultTheme = opts.theme;
 		}
 
-		if (typeof opts.maxBufferSize === 'number') {
-			const old = this._maxBufferSize;
-			const value = this._maxBufferSize = Math.max(opts.maxBufferSize, 0);
-			if (value < old && value < this._buffer.length) {
-				let start = this._bufferStart;
-				let end = this._bufferEnd;
-				if (value === 0 || start === end) {
-					this._buffer = [];
-				} /* else if (start < end) {
-					start = this._bufferStart = end - Math.min(end - start, value);
-					end = this._bufferEnd = Math.min(start + value, end);
-					this._buffer = this._buffer.slice(start, end);
-				} else if (end >= value) {
-					start = this._bufferStart = Math.max(end - value, 0);
-					end = this._bufferEnd = start + Math.min(value, end, buffer.length);
-					this._buffer = buffer.slice(start, end);
-				} else {
-					start = this._bufferStart = buffer.length - Math.min(buffer.length - start, value - end);
-					end = this._bufferEnd = 0;
-					buffer = buffer.slice(start).concat(buffer.slice(Math.max(end - value, 0), Math.min(value, end, buffer.length)));
-				} */
+		if (opts.hasOwnProperty('maxBufferSize')) {
+			try {
+				this._buffer.maxSize = opts.maxBufferSize;
+			} catch (e) {
+				let err = e;
+				if (e instanceof TypeError) {
+					err = new TypeError(`Invalid max buffer size: ${e.message}`);
+				} else if (e instanceof RangeError) {
+					err = new RangeError(`Invalid max buffer size: ${e.message}`);
+				}
+				throw err;
 			}
 		}
 
@@ -448,6 +417,7 @@ class SnoopLogg extends Logger {
 							ts: new Date,
 							enabled: this.enabled
 						});
+						return this;
 					};
 					Object.defineProperty(this, name, { enumerable: true, value });
 					return value;
@@ -470,6 +440,7 @@ class SnoopLogg extends Logger {
 		if (!name || typeof name !== 'string') {
 			throw new TypeError('Expected name to be a string');
 		}
+
 		if (!fn || typeof fn !== 'function') {
 			throw new TypeError('Expected fn to be a function');
 		}
@@ -491,11 +462,12 @@ class SnoopLogg extends Logger {
 		if (!name || typeof name !== 'string') {
 			throw new TypeError('Expected name to be a string');
 		}
+
 		if (!fn || typeof fn !== 'function') {
 			throw new TypeError('Expected fn to be a function');
 		}
 
-		this._styles[name] = fn.bind(this);
+		this.styles[name] = fn.bind(this);
 
 		return this;
 	}
@@ -561,7 +533,7 @@ class SnoopLogg extends Logger {
 	 *
 	 * @param {stream.Writable} stream - The stream to pipe messages to.
 	 * @param {Object} [opts] - Various options.
-	 * @param {Boolean} [opts.flush] - When true, immediately flushes the entire
+	 * @param {Boolean} [opts.flush=false] - When true, immediately flushes the
 	 * buffer of log messages to the stream.
 	 * @param {String} [opts.theme] - The theme to apply to all messages written
 	 * to this stream.
@@ -579,7 +551,7 @@ class SnoopLogg extends Logger {
 
 		// don't add the stream twice
 		for (const s of this._streams) {
-			if (s === stream) {
+			if (s.stream === stream) {
 				return this;
 			}
 		}
@@ -587,17 +559,10 @@ class SnoopLogg extends Logger {
 
 		// flush the buffers
 		if (opts.flush) {
-			let i = this._bufferStart;
-			let j = this._bufferEnd;
-			const len = this._buffer.length;
-			const formatter = opts.theme && this._themes[opts.theme] || this._themes[this._defaultTheme];
-
-			while (i !== j) {
-				const msg = this._buffer[i];
-				msg.formatter = formatter;
-				stream.write(stream._writableState.objectMode ? msg : format(msg));
-				if (++i > this._maxBufferSize) {
-					i = 0;
+			for (const msg of this._buffer) {
+				if (msg.enabled) {
+					msg.formatter = opts.theme && this._themes[opts.theme] || this._themes[this._defaultTheme];
+					stream.write(stream._writableState && stream._writableState.objectMode ? msg : format(msg));
 				}
 			}
 		}
@@ -650,38 +615,31 @@ class SnoopLogg extends Logger {
 		}
 
 		// add the message to the buffer
-		if (this._maxBufferSize > 0) {
-			let i = this._bufferEnd++;
-			if (i > this._maxBufferSize) {
-				this._bufferEnd = 0;
-				if (this._bufferStart === this._bufferEnd) {
-					this._bufferStart++;
-				}
-			}
-			this._buffer[i] = msg;
-		}
+		this._buffer.push(msg);
 
 		if (msg.enabled) {
 			for (const s of this._streams) {
 				msg.formatter = this._themes[s.theme] || this._themes[this._defaultTheme];
-				s.stream.write(s.stream._writableState.objectMode ? msg : format(msg));
+				s.stream.write(s.stream._writableState && s.stream._writableState.objectMode ? msg : format(msg));
 			}
 		}
 
-		process.emit('snooplogg', msg);
+		if (msg.id === this._id) {
+			process.emit('snooplogg', msg);
+		}
 	}
 
 	/**
-	 * Applies a style to a string of text.
+	 * Stylizes text.
 	 *
+	 * @param {String} style - A comma-separated list of styles to apply.
 	 * @param {*} text - The string to stylize.
-	 * @param {String} style - The style name to apply.
 	 * @returns {String}
 	 * @access private
 	 */
-	applyStyle(text, style) {
-		if (text && style) {
-			return style.split(',').reduce((text, style) => this._styles[style] ? this._styles[style](text) : text, String(text));
+	applyStyle(style, text) {
+		if (style && text) {
+			return style.split(',').reduce((text, style) => this.styles[style] ? this.styles[style](text) : text, String(text));
 		}
 		return text;
 	}
@@ -698,7 +656,7 @@ function format(msg) {
 		if (typeof msg.formatter === 'function') {
 			return msg.formatter(msg);
 		}
-		return util.format.apply(null, msg.args);
+		return util.format.apply(null, msg.args) + '\n';
 	}
 	return String(msg);
 }
@@ -713,7 +671,7 @@ const stripRegExp = /\x1B\[\d+m/g;
  * Transform stream that strips colors from the logger to the next stream in the
  * pipe.
  */
-export class StripColors extends Transform {
+class StripColors extends Transform {
 	_transform(msg, enc, cb) {
 		if (msg && typeof msg === 'object') {
 			this.push(format(msg).replace(stripRegExp, ''));
@@ -729,7 +687,7 @@ export class StripColors extends Transform {
  * the message has already been converted to a string, then this simply passes
  * the text through.
  */
-export class Format extends Transform {
+class Format extends Transform {
 	constructor(opts = {}) {
 		opts.objectMode = true;
 		super(opts);
@@ -819,30 +777,30 @@ function createInstanceWithDefaults() {
 
 		.style('uppercase',     s => String(s).toUpperCase())
 		.style('lowercase',     s => String(s).toLowerCase())
-		.style('brackets',      s => `[${s}]`)
-		.style('parens',        s => `(${s})`)
+		.style('bracket',       s => `[${s}]`)
+		.style('paren',         s => `(${s})`)
 		.style('auto',          function (text) {
 			let hash = 0;
 			for (const i in text) {
 				hash = (((hash << 5) - hash) + text.charCodeAt(i)) | 0;
 			}
 			const color = this._colors[Math.abs(hash) % this._colors.length];
-			return this._styles[color](text);
+			return this.styles[color](text);
 		})
 
 		.theme('detailed', function (msg) {
-			const ns = this.applyStyle(msg.ns, msg.nsStyle || 'auto');
-			const type = this.applyStyle(msg.typeLabel, msg.typeStyle);
-			const prefix = this.applyStyle(msg.ts.toISOString(), 'magenta') + ' ' + (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
+			const ns = this.applyStyle(msg.nsStyle || 'auto', msg.ns);
+			const type = this.applyStyle(msg.typeStyle, msg.typeLabel);
+			const prefix = this.applyStyle('magenta', msg.ts.toISOString()) + ' ' + (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
 			return util.format.apply(null, msg.args).split('\n').map(s => prefix + s).join('\n') + '\n';
 		})
-		.theme('standard', msg => {
-			const ns = this.applyStyle(msg.ns, msg.nsStyle || 'auto');
-			const type = this.applyStyle(msg.typeLabel, msg.typeStyle);
+		.theme('standard', function (msg) {
+			const ns = this.applyStyle(msg.nsStyle || 'auto', msg.ns);
+			const type = this.applyStyle(msg.typeStyle, msg.typeLabel);
 			const prefix = (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
 			return util.format.apply(null, msg.args).split('\n').map(s => prefix + s).join('\n') + '\n';
 		})
-		.theme('minimal', msg => {
+		.theme('minimal', function (msg) {
 			return util.format.apply(null, msg.args) + '\n';
 		});
 }
@@ -863,6 +821,6 @@ for (const i of Object.getOwnPropertyNames(SnoopLogg.prototype)) {
 
 exports = module.exports = snooplogg;
 
-export { createInstanceWithDefaults, Logger, SnoopLogg };
-
 export default snooplogg;
+
+export { createInstanceWithDefaults, Format, Logger, SnoopLogg, StripColors };
