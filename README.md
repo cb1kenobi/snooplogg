@@ -86,11 +86,11 @@ Listen for messages from all `SnoopLogg` instances, even from other
 dependencies.
 
 ```javascript
-import { snoop, logg } from 'snooplogg';
+import snooplogg, { snoop } from 'snooplogg';
 
 snoop();
 
-const log = logg('bumpin');
+const log = snooplogg('bumpin');
 
 log('one');
 log
@@ -104,12 +104,12 @@ log.fatal('and like this');
 ```
 
 ```javascript
-import { logg, type } from 'snooplogg';
+import snooplogg, { type } from 'snooplogg';
 
 type('jin', { color: 'cyan' });
 type('juice', { color: 'yellow' });
 
-const log = logg();
+const log = snooplogg();
 
 log.jin('parents ain\'t home');
 log.juice('too much drama', true);
