@@ -29,6 +29,8 @@ Laid back logging.
  * Similar API to [TJ's debug](https://www.npmjs.com/package/debug):
    * `const debug = snooplogg('myapp').log;`
 
+![snooplogg](demo/screenshot.png)
+
 ## Examples
 
 ```javascript
