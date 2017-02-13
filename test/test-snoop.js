@@ -710,7 +710,8 @@ describe('SnoopLogg', () => {
 		}
 
 		const instance = createInstanceWithDefaults()
-			.enable('*');
+			.enable('*')
+			.config({ maxBufferSize: 10 });
 
 		for (let i = 0; i < 10; i++) {
 			instance.log(`foo${i}`);
@@ -738,6 +739,35 @@ describe('SnoopLogg', () => {
 		count = 0;
 		instance.pipe(new MockOutputObjectStream({ objectMode: true }), { flush: true });
 		expect(count).to.equal(10);
+	});
+
+	it('should flush buffered snooped messages', () => {
+		class MockOutputStream extends Writable {
+			_write(msg, enc, cb) {
+				expect(msg.toString()).to.equal('\u001b[34mfoo\u001b[39m test!\n');
+				cb();
+			}
+		}
+
+		const instance = createInstanceWithDefaults()
+			.config({ maxBufferSize: 10 })
+			.enable('*')
+			.snoop();
+
+		const instance2 = createInstanceWithDefaults().enable();
+		const log = instance2('foo');
+
+		log.log('test!');
+
+		instance.pipe(new MockOutputStream, { flush: true });
+
+		try {
+			log('test!');
+		} catch (e) {
+			throw e;
+		} finally {
+			instance.unsnoop();
+		}
 	});
 
 	it('should unpipe a stream', () => {

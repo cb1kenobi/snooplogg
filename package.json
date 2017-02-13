@@ -1,6 +1,6 @@
 {
   "name": "snooplogg",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Your mind on your logs and your logs on your mind",
   "main": "./dist/index.js",
   "author": "Chris Barber <chris@cb1inc.com> (https://github.com/cb1kenobi)",
@@ -12,7 +12,9 @@
     "logs",
     "levels",
     "debug",
-    "console"
+    "console",
+    "snoop",
+    "snooping"
   ],
   "scripts": {
     "build": "gulp build",
@@ -44,7 +46,7 @@
     "gulp": "^3.9.1",
     "gulp-babel": "^6.1.2",
     "gulp-babel-istanbul": "^1.6.0",
-    "gulp-debug": "^3.0.0",
+    "gulp-debug": "^3.1.0",
     "gulp-esdoc": "^0.4.0",
     "gulp-eslint": "^3.0.1",
     "gulp-filter": "^5.0.0",

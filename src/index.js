@@ -78,25 +78,7 @@ class Logger extends Function {
 	 * @type {Boolean}
 	 */
 	get enabled() {
-		let root = this._root || this;
-
-		const allow = root._allow;
-		if (allow === null) {
-			// all logging is silenced
-			return false;
-		}
-
-		if (!this._namespace || allow === '*') {
-			// nothing to filter
-			return true;
-		}
-
-		const ignore = root._ignore;
-		if (allow && allow.test(this._namespace) && (!ignore || !ignore.test(this._namespace))) {
-			return true;
-		}
-
-		return false;
+		return (this._root || this).isEnabled(this._namespace);
 	}
 
 	/**
@@ -137,7 +119,7 @@ class SnoopLogg extends Logger {
 				 * The log message buffer.
 				 * @type {Array.<Object>}
 				 */
-				_buffer: { writable: true, value: new NanoBuffer(250) },
+				_buffer: { writable: true, value: new NanoBuffer(0) },
 
 				/**
 				 * An array of available colors to choose from when rendering
@@ -560,7 +542,7 @@ class SnoopLogg extends Logger {
 		// flush the buffers
 		if (opts.flush) {
 			for (const msg of this._buffer) {
-				if (msg.enabled) {
+				if ((msg.id === this._id && msg.enabled) || (msg.id !== this._id && this.isEnabled(msg.ns))) {
 					msg.formatter = opts.theme && this._themes[opts.theme] || this._themes[this._defaultTheme];
 					stream.write(stream._writableState && stream._writableState.objectMode ? msg : format(msg));
 				}
@@ -627,6 +609,33 @@ class SnoopLogg extends Logger {
 		if (msg.id === this._id) {
 			process.emit('snooplogg', msg);
 		}
+	}
+
+	/**
+	 * Determines if the specified namespace is enabled.
+	 *
+	 * @param {?String} namespace - The namespace.
+	 * @returns {Boolean}
+	 * @access public
+	 */
+	isEnabled(namespace) {
+		const allow = this._allow;
+		if (allow === null) {
+			// all logging is silenced
+			return false;
+		}
+
+		if (!namespace || allow === '*') {
+			// nothing to filter
+			return true;
+		}
+
+		const ignore = this._ignore;
+		if (allow && allow.test(namespace) && (!ignore || !ignore.test(namespace))) {
+			return true;
+		}
+
+		return false;
 	}
 
 	/**
@@ -821,4 +830,11 @@ exports = module.exports = instance;
 
 export default instance;
 
-export { createInstanceWithDefaults, Format, Logger, SnoopLogg, StripColors };
+export {
+	createInstanceWithDefaults,
+	Format,
+	Logger,
+	SnoopLogg,
+	StdioStream,
+	StripColors
+};
