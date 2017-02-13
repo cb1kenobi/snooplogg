@@ -599,7 +599,7 @@ class SnoopLogg extends Logger {
 		// add the message to the buffer
 		this._buffer.push(msg);
 
-		if (msg.enabled) {
+		if ((msg.id === this._id && msg.enabled) || (msg.id !== this._id && this.isEnabled(msg.ns))) {
 			for (const s of this._streams) {
 				msg.formatter = this._themes[s.theme] || this._themes[this._defaultTheme];
 				s.stream.write(s.stream._writableState && s.stream._writableState.objectMode ? msg : format(msg));
