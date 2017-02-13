@@ -788,6 +788,13 @@ function createInstanceWithDefaults() {
 		.style('lowercase',     s => String(s).toLowerCase())
 		.style('bracket',       s => `[${s}]`)
 		.style('paren',         s => `(${s})`)
+
+		.style('highlight',     chalk.cyan)
+		.style('lowlight',      chalk.blue)
+		.style('ok',            chalk.green)
+		.style('notice',        chalk.yellow)
+		.style('alert',         chalk.red)
+		.style('note',          chalk.gray)
 		.style('auto',          function (text) {
 			let hash = 0;
 			for (const i in text) {
