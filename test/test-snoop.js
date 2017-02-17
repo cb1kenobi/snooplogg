@@ -812,9 +812,10 @@ describe('SnoopLogg', () => {
 	it('should expose 3rd party libraries', () => {
 		const instance = createInstanceWithDefaults();
 		expect(instance.chalk).to.be.an.Object;
-		expect(instance.moment).to.be.an.Object;
-		expect(instance.symbols).to.be.an.Object;
 		expect(instance.humanize).to.be.an.Object;
+		expect(instance.moment).to.be.an.Object;
+		expect(instance.pluralize).to.be.an.Object;
+		expect(instance.symbols).to.be.an.Object;
 	});
 
 	it('should log to objectMode stream', () => {

@@ -225,6 +225,24 @@ class SnoopLogg extends Logger {
 				},
 
 				/**
+				 * Re-export of the `pluralize` library. Note that this library
+				 * is lazy loaded.
+				 * @type {Object}
+				 */
+				pluralize: {
+					configurable: true,
+					enumerable: true,
+					get: function () {
+						const value = require('pluralize');
+						Object.defineProperty(this, 'pluralize', {
+							enumerable: true,
+							value
+						});
+						return value;
+					}
+				},
+
+				/**
 				 * Re-export of the `figures` library, but named `symbols`.
 				 * Note that this library is lazy loaded.
 				 * @type {Object}

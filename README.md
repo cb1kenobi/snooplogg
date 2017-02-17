@@ -26,6 +26,7 @@ Laid back logging.
    * [figures](https://www.npmjs.com/package/figures) (exported as `symbols`)
    * [humanize](https://www.npmjs.com/package/humanize)
    * [moment](https://www.npmjs.com/package/moment)
+   * [pluralize](https://www.npmjs.com/package/pluralize)
  * Similar API to [TJ's debug](https://www.npmjs.com/package/debug):
    * `const debug = snooplogg('myapp').log;`
 
