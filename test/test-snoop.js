@@ -37,7 +37,7 @@ describe('SnoopLogg', () => {
 	});
 
 	it('should be instance of SnoopLogg', () => {
-		expect(snooplogg).to.be.a.Function;
+		expect(snooplogg).to.be.a('function');
 	});
 
 	it('should update config', () => {
@@ -151,7 +151,7 @@ describe('SnoopLogg', () => {
 			_write(msg, enc, cb) {
 				try {
 					expect(msg).to.be.instanceof(Buffer);
-					expect(msg.toString()).to.match(/Error\: Oh no/);
+					expect(msg.toString()).to.match(/Error: Oh no/);
 					cb();
 				} catch (e) {
 					cb(e);
@@ -484,7 +484,7 @@ describe('SnoopLogg', () => {
 		let emitCount = 0;
 
 		const onsnoop = msg => {
-			expect(msg).to.be.an.Object;
+			expect(msg).to.be.an('object');
 			expect(msg.id).to.equal(instance._id);
 
 			if (emitCount === 0) {
@@ -811,11 +811,11 @@ describe('SnoopLogg', () => {
 
 	it('should expose 3rd party libraries', () => {
 		const instance = createInstanceWithDefaults();
-		expect(instance.chalk).to.be.an.Object;
-		expect(instance.humanize).to.be.an.Object;
-		expect(instance.moment).to.be.an.Object;
-		expect(instance.pluralize).to.be.an.Object;
-		expect(instance.symbols).to.be.an.Object;
+		expect(instance.chalk).to.be.an('function');
+		expect(instance.humanize).to.be.an('object');
+		expect(instance.moment).to.be.an('function');
+		expect(instance.pluralize).to.be.an('function');
+		expect(instance.symbols).to.be.an('function');
 	});
 
 	it('should log to objectMode stream', () => {

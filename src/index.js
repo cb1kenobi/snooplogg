@@ -764,6 +764,11 @@ class StdioStream extends Writable {
 	}
 }
 
+/**
+ * Creates a snooplogg instance with a bunch of defaults.
+ *
+ * @returns {SnoopLogg}
+ */
 function createInstanceWithDefaults() {
 	return new SnoopLogg()
 		.type('log',   { style: 'gray', label: null })
@@ -825,7 +830,8 @@ function createInstanceWithDefaults() {
 		.theme('detailed', function (msg) {
 			const ns = this.applyStyle(msg.nsStyle || 'auto', msg.ns);
 			const type = this.applyStyle(msg.typeStyle, msg.typeLabel);
-			const prefix = this.applyStyle('magenta', msg.ts.toISOString()) + ' ' + (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
+			const ts = msg.ts instanceof Date ? msg.ts : new Date(msg.ts);
+			const prefix = this.applyStyle('magenta', ts.toISOString()) + ' ' + (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
 			return util.format.apply(null, msg.args).split('\n').map(s => prefix + s).join('\n') + '\n';
 		})
 		.theme('standard', function (msg) {
