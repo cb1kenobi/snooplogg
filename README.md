@@ -8,7 +8,7 @@
 [![Deps][david-image]][david-url]
 [![Dev Deps][david-dev-image]][david-dev-url]
 
-Laid back logging.
+Laid back debug logging.
 
 ## Installation
 
@@ -21,6 +21,7 @@ Laid back logging.
  * Pipe messages to one or more streams
  * Namespacing
  * Filter messages using the `DEBUG` (or `SNOOPLOGG`) environment variable
+ * Automatic color selection with brightness range
  * Includes helper libraries for your convenience
    * [chalk](https://www.npmjs.com/pacakge/chalk)
    * [figures](https://www.npmjs.com/package/figures) (exported as `symbols`)
@@ -128,7 +129,32 @@ Creates a namespaced logger as well as defines the global namespaced logger.
 
 Outputs a message using the standard `console.log()` format syntax.
 
-*More docs to come in the future!*
+#### `snooplogg.config(options)`
+
+Allows you to set various instance specific options.
+
+* `colors` - (Array) An array of color names to choose from when auto-selecting a color,
+  specifically for rendering the namespace.
+* `minBrightness` - (Number) The minimum brightness to auto-select a color. Value must be between 0
+  and 255 as well as less than or equal to the `maxBrightness`. Defaults to `0`.
+* `maxBrightness` - (Number) The maximum brightness to auto-select a color. Value must be between 0
+  and 255 as well as greater than or equal to the `minBrightness`. Defaults to `255`.
+* `theme` - (String) The name of the default theme to use. Defaults to `standard`.
+* `maxBufferSize` - (Number) The maximum number of log lines to buffer. Used to flush prior messages
+  to new pipes.
+
+Returns the original `SnoopLogg` instance.
+
+### Global Defaults
+
+SnoopLogg allows you to set defaults using environment variables that apply to all SnoopLogg
+instances.
+
+* `SNOOPLOGG_COLOR_LIST` - A comma-separated list of supported color names.
+* `SNOOPLOGG_DEFAULT_THEME` - Sets the `theme`.
+* `SNOOPLOGG_MAX_BUFFER_SIZE` - Sets the `maxBufferSize`.
+* `SNOOPLOGG_MAX_BRIGHTNESS` - Sets the `maxBrightness`.
+* `SNOOPLOGG_MIN_BRIGHTNESS` - Sets the `minBrightness`.
 
 ## License
 

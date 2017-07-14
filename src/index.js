@@ -1,8 +1,11 @@
+/* istanbul ignore if */
 if (!Error.prepareStackTrace) {
 	require('source-map-support/register');
 }
 
 import chalk from 'chalk';
+import decompress from 'brotli/decompress';
+import fs from 'fs';
 import NanoBuffer from 'nanobuffer';
 import supportsColor from 'supports-color';
 import util from 'util';
@@ -21,6 +24,7 @@ class Logger extends Function {
 	 *
 	 * @param {?String} [namespace] - The name for this logger instance.
 	 * @param {?Logger} [parent] - The parent logger.
+	 * @param {?SnoopLogg} [root] - A reference to the top-level SnoopLogg instance.
 	 * @param {?String} [style] - The style for this namespace. Ultimately it's
 	 * up to the theme as to how the namespace is styled.
 	 * @access public
@@ -96,8 +100,9 @@ class Logger extends Function {
  */
 class SnoopLogg extends Logger {
 	/**
-	 * Generates a namespaces logger class with the `SnoopLogg` prototype and
+	 * Generates a namespaced logger class with the `SnoopLogg` prototype and
 	 * initializes its properties.
+	 *
 	 * @access public
 	 */
 	constructor() {
@@ -116,23 +121,29 @@ class SnoopLogg extends Logger {
 				_allow:  { writable: true, value: null },
 
 				/**
+				 * A cache of hashes to auto-selected colors.
+				 * @type {Object}
+				 */
+				_autoCache: { writable: true, value: {} },
+
+				/**
 				 * The log message buffer.
 				 * @type {Array.<Object>}
 				 */
-				_buffer: { writable: true, value: new NanoBuffer(0) },
+				_buffer: { writable: true, value: new NanoBuffer(process.env.SNOOPLOGG_MAX_BUFFER_SIZE !== undefined ? Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BUFFER_SIZE)) : 0) },
 
 				/**
 				 * An array of available colors to choose from when rendering
 				 * auto-styled labels such as the namespace.
 				 * @type {Array.<String>}
 				 */
-				_colors: { writable: true, value: ['blue', 'cyan', 'green', 'magenta', 'red', 'yellow'] },
+				_colors: { writable: true, value: process.env.SNOOPLOGG_COLOR_LIST ? process.env.SNOOPLOGG_COLOR_LIST.split(',') : [] },
 
 				/**
 				 * The default theme to apply if a stream didn't specify one.
 				 * @type {String}
 				 */
-				_defaultTheme: { writable: true, value: 'standard' },
+				_defaultTheme: { writable: true, value: process.env.SNOOPLOGG_DEFAULT_THEME || 'standard' },
 
 				/**
 				 * A lazy unique identifier for this `SnoopLogg` instance. This
@@ -149,11 +160,23 @@ class SnoopLogg extends Logger {
 				_ignore: { writable: true, value: null },
 
 				/**
+				 * The minumum brightness when auto-selecting a color.
+				 * @type {Number}
+				 */
+				 _minBrightness: { writable: true, value: process.env.SNOOPLOGG_MIN_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MIN_BRIGHTNESS))) : 0 },
+
+				/**
 				 * A list of middlewares to call and process log messages prior
 				 * to dispatching.
 				 * @type {Array.<Function>}
 				 */
 				_middlewares: { value: [] },
+
+				/**
+				 * The maximum brightness when auto-selecting a color.
+				 * @type {Number}
+				 */
+				_maxBrightness: { writable: true, value: process.env.SNOOPLOGG_MAX_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BRIGHTNESS))) : 255 },
 
 				/**
 				 * A list of objects containing the stream and theme name.
@@ -264,6 +287,18 @@ class SnoopLogg extends Logger {
 	}
 
 	/**
+	 * Explicit way of creating a namespace. `snooplogg('foo")` and `snooplogg.ns('foo')` are
+	 * equivalent.
+	 *
+	 * @param {?String} [namespace] - The name for this logger instance.
+	 * @returns {Logger}
+	 * @access public
+	 */
+	ns(namespace) {
+		return new Logger(namespace, this, this._root || this);
+	}
+
+	/**
 	 * Enables all namespaces effectively allowing all logging to be written to
 	 * stdout/stderr.
 	 *
@@ -294,6 +329,29 @@ class SnoopLogg extends Logger {
 				throw new TypeError('Expected colors to be a string or array');
 			}
 			this._colors = typeof opts.colors === 'string' ? opts.colors.split(',') : opts.colors;
+		}
+
+		if (opts.minBrightness) {
+			if (typeof opts.minBrightness !== 'number') {
+				throw new TypeError('Expected minimum brightness to be a number');
+			}
+			if (opts.minBrightness < 0 || opts.minBrightness > 255) {
+				throw new RangeError('Minimum brightness must be between 0 and 255');
+			}
+			this._minBrightness = opts.minBrightness;
+		}
+
+		if (opts.maxBrightness) {
+			if (typeof opts.maxBrightness !== 'number') {
+				throw new TypeError('Expected maximum brightness to be a number');
+			}
+			if (opts.maxBrightness < 0 || opts.maxBrightness > 255) {
+				throw new RangeError('Maximum brightness must be between 0 and 255');
+			}
+			if (opts.maxBrightness < this._minBrightness) {
+				throw new RangeError('Maximum brightness must greater than or equal to the minimum brightness');
+			}
+			this._maxBrightness = opts.maxBrightness;
 		}
 
 		if (opts.theme) {
@@ -501,11 +559,19 @@ class SnoopLogg extends Logger {
 	 * @returns {SnoopLogg}
 	 * @access public
 	 */
-	snoop() {
+	snoop(nsPrefix) {
+		if (nsPrefix && typeof nsPrefix !== 'string') {
+			throw new TypeError('Expected namespace prefix to be a string');
+		}
+
 		this.unsnoop();
 
 		this.onSnoopMessage = msg => {
 			if (msg.id !== this._id) {
+				if (nsPrefix) {
+					msg = Object.assign({}, msg);
+					msg.ns = nsPrefix + (msg.ns || '');
+				}
 				this.dispatch(msg);
 			}
 		};
@@ -700,6 +766,7 @@ const stripRegExp = /\x1B\[\d+m/g;
  */
 class StripColors extends Transform {
 	_transform(msg, enc, cb) {
+		/* istanbul ignore else */
 		if (msg && typeof msg === 'object') {
 			this.push(format(msg).replace(stripRegExp, ''));
 		} else {
@@ -723,6 +790,7 @@ class Format extends Transform {
 	_transform(msg, enc, cb) {
 		let message;
 
+		/* istanbul ignore else */
 		if (msg && typeof msg === 'object' && !(msg instanceof Buffer)) {
 			this.push(format(msg));
 		} else {
@@ -741,6 +809,7 @@ class StdioStream extends Writable {
 		opts.objectMode = true;
 		super(opts);
 
+		/* istanbul ignore else */
 		if (supportsColor) {
 			this.stdout = process.stdout;
 			this.stderr = process.stderr;
@@ -751,6 +820,7 @@ class StdioStream extends Writable {
 	}
 
 	_write(msg, enc, cb) {
+		/* istanbul ignore next */
 		if (msg && typeof msg === 'object' && !(msg instanceof Buffer)) {
 			if (msg.fd === 1) {
 				this.stderr.write(format(msg));
@@ -818,12 +888,44 @@ function createInstanceWithDefaults() {
 		.style('notice',        chalk.yellow)
 		.style('alert',         chalk.red)
 		.style('note',          chalk.gray)
-		.style('auto',          function (text) {
+
+		.style('auto', function (text) {
 			let hash = 0;
 			for (const i in text) {
 				hash = (((hash << 5) - hash) + text.charCodeAt(i)) | 0;
 			}
-			const color = this._colors[Math.abs(hash) % this._colors.length];
+			hash = Math.abs(hash);
+
+			// check the cache first
+			let color = this._autoCache[hash];
+
+			if (!color) {
+				// no cache, do we have a list of valid colors?
+				let colors = this._colors;
+
+				if (colors && colors.length) {
+					// yes, pick from the list of colors
+					color = this._autoCache[hash] = colors[hash % colors.length];
+				} else {
+					// no list, pick a brightness and then load the lookup table and pick a color
+					const brightness = (hash % Math.max(1, this._maxBrightness - this._minBrightness)) + this._minBrightness;
+					const bytes = decompress(fs.readFileSync(`${__dirname}/../lookup/${brightness}.br`));
+
+					/* istanbul ignore if */
+					if (bytes.length === 0 || bytes.length % 3 !== 0) {
+						// this should never happen
+						return text;
+					}
+
+					const idx = (hash % (bytes.length / 3)) * 3;
+					color = this._autoCache[hash] = [ bytes[idx], bytes[idx + 1], bytes[idx + 2] ];
+				}
+			}
+
+			if (Array.isArray(color)) {
+				return chalk.rgb.apply(chalk, color)(text);
+			}
+
 			return this.styles[color](text);
 		})
 

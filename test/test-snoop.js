@@ -65,6 +65,49 @@ describe('SnoopLogg', () => {
 
 		expect(() => {
 			instance.config({
+				minBrightness: 'foo'
+			});
+		}).to.throw(TypeError, 'Expected minimum brightness to be a number');
+
+		expect(() => {
+			instance.config({
+				minBrightness: -1
+			});
+		}).to.throw(RangeError, 'Minimum brightness must be between 0 and 255');
+
+		expect(() => {
+			instance.config({
+				minBrightness: 666
+			});
+		}).to.throw(RangeError, 'Minimum brightness must be between 0 and 255');
+
+		expect(() => {
+			instance.config({
+				maxBrightness: 'foo'
+			});
+		}).to.throw(TypeError, 'Expected maximum brightness to be a number');
+
+		expect(() => {
+			instance.config({
+				maxBrightness: -1
+			});
+		}).to.throw(RangeError, 'Maximum brightness must be between 0 and 255');
+
+		expect(() => {
+			instance.config({
+				maxBrightness: 666
+			});
+		}).to.throw(RangeError, 'Maximum brightness must be between 0 and 255');
+
+		expect(() => {
+			instance.config({
+				minBrightness: 100,
+				maxBrightness: 50
+			});
+		}).to.throw(RangeError, 'Maximum brightness must greater than or equal to the minimum brightness');
+
+		expect(() => {
+			instance.config({
 				theme: 123
 			});
 		}).to.throw(TypeError, 'Expected theme to be a string');
@@ -183,7 +226,10 @@ describe('SnoopLogg', () => {
 		out.pipe(new MockOutputStream);
 
 		const instance = createInstanceWithDefaults()
-			.config({ theme: 'standard' })
+			.config({
+				colors: [ 'blue', 'cyan', 'green', 'magenta', 'red', 'yellow' ],
+				theme: 'standard'
+			})
 			.enable('*')
 			.pipe(out);
 
@@ -209,7 +255,10 @@ describe('SnoopLogg', () => {
 		out.pipe(new MockOutputStream);
 
 		const instance = createInstanceWithDefaults()
-			.config({ theme: 'standard' })
+			.config({
+				colors: [ 'blue', 'cyan', 'green', 'magenta', 'red', 'yellow' ],
+				theme: 'standard'
+			})
 			.enable('*')
 			.pipe(out);
 
@@ -433,6 +482,9 @@ describe('SnoopLogg', () => {
 
 	it('should styles to text', () => {
 		const instance = createInstanceWithDefaults()
+			.config({
+				colors: [ 'blue', 'cyan', 'green', 'magenta', 'red', 'yellow' ]
+			})
 			.style('reverse', s => s.split('').reverse().join(''));
 
 		expect(instance.styles.red('hello')).to.equal('\u001b[31mhello\u001b[39m');
@@ -667,6 +719,36 @@ describe('SnoopLogg', () => {
 		}
 	});
 
+	it('should snoop on other instances with namespace prefix', () => {
+		class MockOutputStream extends Writable {
+			_write(msg, enc, cb) {
+				expect(msg.toString()).to.equal('\u001b[31mfoo:\u001b[39m test!\n');
+				cb();
+			}
+		}
+
+		const instance = createInstanceWithDefaults()
+			.config({ colors: [ 'red' ] })
+			.enable('*')
+			.pipe(new MockOutputStream)
+			.snoop('foo:');
+
+		try {
+			createInstanceWithDefaults()
+				.log('test!');
+		} catch (e) {
+			throw e;
+		} finally {
+			instance.unsnoop();
+		}
+	});
+
+	it('should fail if snoop namespace prefix is not a string', () => {
+		expect(() => {
+			createInstanceWithDefaults().snoop(123);
+		}).to.throw(TypeError, 'Expected namespace prefix to be a string');
+	});
+
 	it('should error if invalid pipe or unpipe params', () => {
 		class MockOutputStream extends Writable {
 			_write(msg, enc, cb) {
@@ -750,7 +832,10 @@ describe('SnoopLogg', () => {
 		}
 
 		const instance = createInstanceWithDefaults()
-			.config({ maxBufferSize: 10 })
+			.config({
+				colors: [ 'blue', 'cyan', 'green', 'magenta', 'red', 'yellow' ],
+				maxBufferSize: 10
+			})
 			.enable('*')
 			.snoop();
 
@@ -886,7 +971,10 @@ describe('SnoopLogg', () => {
 		}
 
 		createInstanceWithDefaults()
-			.config({ theme: 'detailed' })
+			.config({
+				colors: [ 'blue', 'cyan', 'green', 'magenta', 'red', 'yellow' ],
+				theme: 'detailed'
+			})
 			.enable('*')
 			.pipe(new MockOutputStream)
 			.log('log() test');
@@ -904,7 +992,10 @@ describe('SnoopLogg', () => {
 		}
 
 		createInstanceWithDefaults()
-			.config({ theme: 'detailed' })
+			.config({
+				colors: [ 'blue', 'cyan', 'green', 'magenta', 'red', 'yellow' ],
+				theme: 'detailed'
+			})
 			.enable('*')
 			.pipe(new MockOutputTypeStream)
 			.info('info() test');
@@ -922,11 +1013,62 @@ describe('SnoopLogg', () => {
 		}
 
 		const instance = createInstanceWithDefaults()
-			.config({ theme: 'detailed' })
+			.config({
+				colors: [ 'blue', 'cyan', 'green', 'magenta', 'red', 'yellow' ],
+				theme: 'detailed'
+			})
 			.enable('*')
 			.pipe(new MockNamespacedOutputStream);
 
 		const foo = instance('foo');
 		foo.log('foo() test');
+	});
+
+	it('should fail to auto pick color and fallback to built-in colors', () => {
+		class MockOutputStream extends Writable {
+			_write(msg, enc, cb) {
+				try {
+					expect(msg).to.be.instanceof(Buffer);
+					expect(msg.toString()).to.equal('\u001b[38;2;255;255;255mfoo\u001b[39m bar!\n');
+					cb();
+				} catch (e) {
+					cb(e);
+				}
+			}
+		}
+
+		const instance = createInstanceWithDefaults()
+			.config({
+				minBrightness: 255,
+				maxBrightness: 255,
+				theme: 'standard'
+			})
+			.enable('*')
+			.pipe(new MockOutputStream);
+
+		const fooLogger = instance('foo');
+
+		fooLogger.log('bar!');
+	});
+
+	it('should explicitly create a namespaced logger', () => {
+		class MockOutputStream extends Writable {
+			_write(msg, enc, cb) {
+				try {
+					expect(msg).to.be.instanceof(Buffer);
+					expect(msg.toString()).to.equal('\u001b[38;2;118;83;1mfoo\u001b[39m log() test\n');
+					cb();
+				} catch (e) {
+					cb(e);
+				}
+			}
+		}
+
+		createInstanceWithDefaults()
+			.config({ theme: 'standard' })
+			.enable('*')
+			.pipe(new MockOutputStream)
+			.ns('foo')
+			.log('log() test');
 	});
 });
