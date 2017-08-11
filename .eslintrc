@@ -4,35 +4,47 @@
         "node": true
     },
     "extends": "eslint:recommended",
+    "globals": {
+    },
     "parser": "babel-eslint",
     "parserOptions": {
-        "ecmaVersion": 7,
+        "ecmaFeatures": {
+            "modules": true
+        },
         "sourceType": "module"
     },
+    "plugins": [
+        "security"
+    ],
     "root": true,
     "rules": {
-        "indent": [
-            2,
-            "tab",
-            { "SwitchCase": 1 }
-        ],
-        "quotes": [
-            2,
-            "single"
-        ],
-        "linebreak-style": [
-            2,
-            "unix"
-        ],
-        "semi": [
-            2,
-            "always"
-        ],
-        "no-console": 0,
-        "no-mixed-spaces-and-tabs": 0,
+        "array-bracket-spacing": [ "error", "always", { "objectsInArrays": false, "arraysInArrays": false } ],
+        "brace-style": [ 2, "1tbs", { "allowSingleLine": true } ],
+        "camelcase": 0,
+        "curly": [ 2, "all" ],
+        "eol-last": 2,
+        "indent": [ 2, "tab", { "SwitchCase": 1 } ],
+        "keyword-spacing": [ "error" ],
+        "linebreak-style": [ 2, "unix" ],
+        "max-len": [ 2, 200 ],
+        "no-case-declarations": 0,
         "no-cond-assign": 0,
+        "no-console": 0,
+        "no-empty": 1,
+        "no-inner-declarations": 0,
+        "no-mixed-spaces-and-tabs": 2,
+        "no-multi-str": 2,
+        "no-multiple-empty-lines": 2,
+        "no-trailing-spaces": 2,
         "no-unused-vars": 0,
-        "constructor-super": 0,
-        "no-class-assign": 0
+        "no-useless-escape": 1,
+        "quotes": [ 2, "single" ],
+        "semi": [ 2, "always" ],
+        "space-before-blocks": [ 2, "always" ],
+        "space-before-function-paren": [ "error", { "anonymous": "always", "named": "ignore", "asyncArrow": "always" }],
+        "space-in-parens": [ "error", "never" ],
+        "space-infix-ops": 2,
+        "space-unary-ops": [ 2, { "nonwords": false, "overrides": {} } ],
+        "valid-jsdoc": [ 1, { "requireReturn": false, "requireReturnDescription": false } ]
     }
 }

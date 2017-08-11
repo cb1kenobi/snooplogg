@@ -60,8 +60,14 @@ describe('SnoopLogg', () => {
 		});
 
 		instance.config({
-			colors: ['green', 'yellow']
+			colors: [ 'green', 'yellow' ]
 		});
+
+		expect(() => {
+			instance.config({
+				inspectOptions: 'foo'
+			});
+		}).to.throw(TypeError, 'Expected inspect options to be an object');
 
 		expect(() => {
 			instance.config({
@@ -156,7 +162,7 @@ describe('SnoopLogg', () => {
 	});
 
 	it('should output log types', () => {
-		const types = ['trace', 'debug', 'info', 'warn', 'error', 'fatal'];
+		const types = [ 'trace', 'debug', 'info', 'warn', 'error', 'fatal' ];
 		const expected = [
 			'\u001b[90mtrace\u001b[39m trace() test\n',
 			'\u001b[35mdebug\u001b[39m debug() test\n',
@@ -540,9 +546,9 @@ describe('SnoopLogg', () => {
 			expect(msg.id).to.equal(instance._id);
 
 			if (emitCount === 0) {
-				expect(msg.args).to.deep.equal(['foo']);
+				expect(msg.args).to.deep.equal([ 'foo' ]);
 			} else if (emitCount === 1) {
-				expect(msg.args).to.deep.equal(['bar %s', 'baz']);
+				expect(msg.args).to.deep.equal([ 'bar %s', 'baz' ]);
 			}
 			emitCount++;
 		};
@@ -1056,7 +1062,7 @@ describe('SnoopLogg', () => {
 			_write(msg, enc, cb) {
 				try {
 					expect(msg).to.be.instanceof(Buffer);
-					expect(msg.toString()).to.equal('\u001b[38;2;118;83;1mfoo\u001b[39m log() test\n');
+					expect(msg.toString()).to.equal('\u001b[38;2;26;197;232mfoo\u001b[39m log() test\n');
 					cb();
 				} catch (e) {
 					cb(e);
@@ -1070,5 +1076,29 @@ describe('SnoopLogg', () => {
 			.pipe(new MockOutputStream)
 			.ns('foo')
 			.log('log() test');
+	});
+
+	it('should colorize JSON objects', () => {
+		class MockOutputStream extends Writable {
+			_write(msg, enc, cb) {
+				try {
+					expect(msg).to.be.instanceof(Buffer);
+					expect(msg.toString()).to.equal('{ foo: \u001b[32m\'bar\'\u001b[39m,\n  baz: \u001b[33m123\u001b[39m,\n  undef: \u001b[90mundefined\u001b[39m }\n');
+					cb();
+				} catch (e) {
+					cb(e);
+				}
+			}
+		}
+
+		createInstanceWithDefaults()
+			.config({ theme: 'standard' })
+			.enable('*')
+			.pipe(new MockOutputStream)
+			.log({
+				foo: 'bar',
+				baz: 123,
+				undef: undefined
+			});
 	});
 });

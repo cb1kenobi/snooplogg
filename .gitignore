@@ -1,5 +1,6 @@
 ._*
 .DS_Store*
+.nyc_output
 /coverage
 /dist
 /docs

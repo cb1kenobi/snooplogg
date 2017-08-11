@@ -6,7 +6,7 @@ const snooplogg = require('../dist/index').default;
 
 snooplogg.stdio
 	.config({
-		colors: 'cyan,yellow,blue,gray',
+		//colors: 'cyan,yellow,blue,gray',
 		theme: 'detailed'
 	});
 

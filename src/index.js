@@ -160,10 +160,25 @@ class SnoopLogg extends Logger {
 				_ignore: { writable: true, value: null },
 
 				/**
+				 * Options that are passed into `util.inspect()` to stringify objects. If set to
+				 * `null`, then the value is stringified using Node's `util.format()`.
+				 * @type {Object}
+				 */
+				_inspectOptions: {
+					writable: true,
+					value: {
+						breakLength: 0,
+						colors: true,
+						depth: 4,
+						showHidden: true
+					}
+				},
+
+				/**
 				 * The minumum brightness when auto-selecting a color.
 				 * @type {Number}
 				 */
-				 _minBrightness: { writable: true, value: process.env.SNOOPLOGG_MIN_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MIN_BRIGHTNESS))) : 0 },
+				_minBrightness: { writable: true, value: process.env.SNOOPLOGG_MIN_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MIN_BRIGHTNESS))) : 0 },
 
 				/**
 				 * A list of middlewares to call and process log messages prior
@@ -315,7 +330,9 @@ class SnoopLogg extends Logger {
 	 * @param {Object} [opts] - Various options.
 	 * @param {String|Array.<String>} [opts.colors] - An array or
 	 * comma-separated list of colors to choose from when auto-styling.
-	 * @param [opts.maxBufferSize] - The max buffer size.
+	 * @param {Object} [opts.inspectOptions] - Options to pass into `util.inspect()` when
+	 * stringifying objects. Set to `null` to stringify objects using Node's `util.format()`.
+	 * @param {Number} [opts.maxBufferSize] - The max buffer size.
 	 * @returns {SnoopLogg}
 	 * @access public
 	 */
@@ -329,6 +346,13 @@ class SnoopLogg extends Logger {
 				throw new TypeError('Expected colors to be a string or array');
 			}
 			this._colors = typeof opts.colors === 'string' ? opts.colors.split(',') : opts.colors;
+		}
+
+		if (opts.inspectOptions) {
+			if (typeof opts.inspectOptions !== 'object') {
+				throw new TypeError('Expected inspect options to be an object');
+			}
+			this._inspectOptions = opts.inspectOptions;
 		}
 
 		if (opts.minBrightness) {
@@ -533,8 +557,9 @@ class SnoopLogg extends Logger {
 	/**
 	 * Adds a middleware function to the message dispatching system.
 	 *
-	 * @param {Function} middleware
-	 * @param {Number} [priority=0]
+	 * @param {Function} middleware - A middleware function to add to the list.
+	 * @param {Number} [priority=0] - The middleware priority. Negative priority is run before
+	 * positive values.
 	 * @returns {SnoopLogg}
 	 * @access public
 	 */
@@ -556,6 +581,8 @@ class SnoopLogg extends Logger {
 	/**
 	 * Starts listenening for events from other SnoopLogg instances.
 	 *
+	 * @param {String} [nsPrefix] - An optional label to prepend to the namespace for log messages
+	 * from other SnoopLogg instances.
 	 * @returns {SnoopLogg}
 	 * @access public
 	 */
@@ -664,7 +691,7 @@ class SnoopLogg extends Logger {
 	 * @param {Object} msg - A message object.
 	 * @param {Array} msg.args - An array of zero or more arguments that will be
 	 * formatted into the final log message.
-	 * @access private
+	 * @access public
 	 */
 	dispatch(msg) {
 		if (!msg || typeof msg !== 'object') {
@@ -934,16 +961,31 @@ function createInstanceWithDefaults() {
 			const type = this.applyStyle(msg.typeStyle, msg.typeLabel);
 			const ts = msg.ts instanceof Date ? msg.ts : new Date(msg.ts);
 			const prefix = this.applyStyle('magenta', ts.toISOString()) + ' ' + (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
-			return util.format.apply(null, msg.args).split('\n').map(s => prefix + s).join('\n') + '\n';
+			const args = this._inspectOptions ? msg.args.map(i => i !== null && typeof i === 'object' ? util.inspect(i, this._inspectOptions) : i) : msg.args;
+			return util.format
+				.apply(null, args)
+				.split('\n')
+				.map(s => prefix + s)
+				.join('\n')
+				+ '\n';
 		})
 		.theme('standard', function (msg) {
 			const ns = this.applyStyle(msg.nsStyle || 'auto', msg.ns);
 			const type = this.applyStyle(msg.typeStyle, msg.typeLabel);
 			const prefix = (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
-			return util.format.apply(null, msg.args).split('\n').map(s => prefix + s).join('\n') + '\n';
+			const args = this._inspectOptions ? msg.args.map(i => i !== null && typeof i === 'object' ? util.inspect(i, this._inspectOptions) : i) : msg.args;
+			return util.format
+				.apply(null, args)
+				.split('\n')
+				.map(s => prefix + s)
+				.join('\n')
+				+ '\n';
 		})
 		.theme('minimal', function (msg) {
-			return util.format.apply(null, msg.args) + '\n';
+			const args = this._inspectOptions ? msg.args.map(i => i !== null && typeof i === 'object' ? util.inspect(i, this._inspectOptions) : i) : msg.args;
+			return util.format
+				.apply(null, args)
+				+ '\n';
 		});
 }
 
