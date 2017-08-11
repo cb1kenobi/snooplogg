@@ -961,7 +961,7 @@ function createInstanceWithDefaults() {
 			const type = this.applyStyle(msg.typeStyle, msg.typeLabel);
 			const ts = msg.ts instanceof Date ? msg.ts : new Date(msg.ts);
 			const prefix = this.applyStyle('magenta', ts.toISOString()) + ' ' + (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
-			const args = this._inspectOptions ? msg.args.map(i => i !== null && typeof i === 'object' ? util.inspect(i, this._inspectOptions) : i) : msg.args;
+			const args = this._inspectOptions ? msg.args.map(it => isJSON(it) ? util.inspect(it, this._inspectOptions) : it) : msg.args;
 			return util.format
 				.apply(null, args)
 				.split('\n')
@@ -973,7 +973,7 @@ function createInstanceWithDefaults() {
 			const ns = this.applyStyle(msg.nsStyle || 'auto', msg.ns);
 			const type = this.applyStyle(msg.typeStyle, msg.typeLabel);
 			const prefix = (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
-			const args = this._inspectOptions ? msg.args.map(i => i !== null && typeof i === 'object' ? util.inspect(i, this._inspectOptions) : i) : msg.args;
+			const args = this._inspectOptions ? msg.args.map(it => isJSON(it) ? util.inspect(it, this._inspectOptions) : it) : msg.args;
 			return util.format
 				.apply(null, args)
 				.split('\n')
@@ -982,7 +982,7 @@ function createInstanceWithDefaults() {
 				+ '\n';
 		})
 		.theme('minimal', function (msg) {
-			const args = this._inspectOptions ? msg.args.map(i => i !== null && typeof i === 'object' ? util.inspect(i, this._inspectOptions) : i) : msg.args;
+			const args = this._inspectOptions ? msg.args.map(it => isJSON(it) ? util.inspect(it, this._inspectOptions) : it) : msg.args;
 			return util.format
 				.apply(null, args)
 				+ '\n';
@@ -999,6 +999,14 @@ for (const i of Object.getOwnPropertyNames(SnoopLogg.prototype)) {
 	if (typeof SnoopLogg.prototype[i] === 'function') {
 		instance[i] = instance[i].bind(instance);
 	}
+}
+
+function isJSON(it) {
+	if (it === null || typeof it !== 'object') {
+		return false;
+	}
+	const proto = Object.getPrototypeOf(it);
+	return proto && proto.constructor && proto.constructor.name === 'Object';
 }
 
 exports = module.exports = instance;
