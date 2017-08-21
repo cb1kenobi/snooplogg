@@ -170,7 +170,7 @@ class SnoopLogg extends Logger {
 						breakLength: 0,
 						colors: true,
 						depth: 4,
-						showHidden: true
+						showHidden: false
 					}
 				},
 
