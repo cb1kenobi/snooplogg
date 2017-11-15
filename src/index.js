@@ -785,7 +785,11 @@ function format(msg) {
  * ANSI color sequence regex.
  * @type {RegExp}
  */
-const stripRegExp = /\x1B\[\d+m/g;
+ const pattern = [
+ 	'[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\\u0007)',
+ 	'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))'
+ ].join('|');
+ const stripRegExp = new RegExp(pattern, 'g');
 
 /**
  * Transform stream that strips colors from the logger to the next stream in the
@@ -820,15 +824,12 @@ class Format extends Transform {
 	}
 
 	_transform(msg, enc, cb) {
-		let message;
-
 		/* istanbul ignore else */
 		if (msg && typeof msg === 'object' && !(msg instanceof Buffer)) {
 			this.push(format(msg));
 		} else {
 			this.push(msg);
 		}
-
 		cb();
 	}
 }
