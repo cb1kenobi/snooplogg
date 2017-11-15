@@ -792,9 +792,14 @@ const stripRegExp = /\x1B\[\d+m/g;
  * pipe.
  */
 class StripColors extends Transform {
+	constructor(opts = {}) {
+		opts.objectMode = true;
+		super(opts);
+	}
+
 	_transform(msg, enc, cb) {
 		/* istanbul ignore else */
-		if (msg && typeof msg === 'object') {
+		if (msg && typeof msg === 'object' && !(msg instanceof Buffer)) {
 			this.push(format(msg).replace(stripRegExp, ''));
 		} else {
 			this.push(msg.toString().replace(stripRegExp, ''));
