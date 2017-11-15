@@ -487,12 +487,13 @@ class SnoopLogg extends Logger {
 			// runtime because if you `import { info } from 'SnoopLogg'`, `info()`
 			// gets forced into the global context.
 			Object.defineProperty(Logger.prototype, name, {
+				configurable: true,
 				enumerable: true,
 				get: function () {
 					const value = (...args) => {
 						(this._root || this).dispatch({
 							id: (this._root || this)._id,
-							args,
+							args: typeof opts.transform === 'function' ? opts.transform(args) : args,
 							...type,
 							ns: this._namespace,
 							nsStyle: this._namespaceStyle,
@@ -501,7 +502,11 @@ class SnoopLogg extends Logger {
 						});
 						return this;
 					};
-					Object.defineProperty(this, name, { enumerable: true, value });
+					Object.defineProperty(this, name, {
+						configurable: true,
+						enumerable: true,
+						value
+					});
 					return value;
 				}
 			});
@@ -875,7 +880,19 @@ class StdioStream extends Writable {
 function createInstanceWithDefaults() {
 	return new SnoopLogg()
 		.type('log',   { style: 'gray', label: null })
-		.type('trace', { style: 'gray' })
+		.type('trace', {
+			style: 'gray',
+			transform(args) {
+				const err = {
+					name:    'Trace',
+					message: util.format.apply(null, args)
+				};
+				Error.captureStackTrace(err);
+
+				// no sense leaving this function in the stack
+				return [ `${err.name}${err.message ? `: ${err.message}` : ''}\n${err.stack.split('\n').slice(3).join('\n')}` ];
+			}
+		})
 		.type('debug', { style: 'magenta' })
 		.type('info',  { style: 'green' })
 		.type('warn',  { style: 'yellow',      fd: 1 })

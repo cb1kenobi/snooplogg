@@ -31,4 +31,6 @@ http.error('401 Unauthorized');
 
 snooplogg.fatal('App be trippin');
 
+snooplogg.trace('Oh naw');
+
 console.log('\n');
