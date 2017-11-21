@@ -164,7 +164,7 @@ describe('SnoopLogg', () => {
 	it('should output log types', () => {
 		const types = [ 'trace', 'debug', 'info', 'warn', 'error', 'fatal' ];
 		const expected = [
-			'\u001b[90mtrace\u001b[39m trace() test\n',
+			/^\u001b\[90mtrace\u001b\[39m Trace: trace\(\) test\n/,
 			'\u001b[35mdebug\u001b[39m debug() test\n',
 			'\u001b[32minfo\u001b[39m info() test\n',
 			'\u001b[33mwarn\u001b[39m warn() test\n',
@@ -177,7 +177,12 @@ describe('SnoopLogg', () => {
 			_write(msg, enc, cb) {
 				try {
 					expect(msg).to.be.instanceof(Buffer);
-					expect(msg.toString()).to.equal(expected[i++]);
+					const value = expected[i++];
+					if (value instanceof RegExp) {
+						expect(msg.toString()).to.match(value);
+					} else {
+						expect(msg.toString()).to.equal(value);
+					}
 					cb();
 				} catch (e) {
 					cb(e);

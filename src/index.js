@@ -655,6 +655,15 @@ class SnoopLogg extends Logger {
 		}
 		this._streams.push({ stream, theme: opts.theme });
 
+		// listen if the stream ends so we can remove it
+		stream.on('end', () => {
+			for (let i = 0; i < this._streams.length; i++) {
+				if (this._streams[i].stream === stream) {
+					this._streams.splice(i--, 1);
+				}
+			}
+		});
+
 		// flush the buffers
 		if (opts.flush) {
 			for (const msg of this._buffer) {
