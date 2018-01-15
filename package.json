@@ -1,6 +1,6 @@
 {
   "name": "snooplogg",
-  "version": "1.9.1",
+  "version": "1.9.2",
   "description": "Your mind on your logs and your logs on your mind",
   "main": "./dist/index.js",
   "author": "Chris Barber <chris@cb1inc.com> (https://github.com/cb1kenobi)",
