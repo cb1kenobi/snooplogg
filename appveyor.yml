@@ -1,0 +1,20 @@
+environment:
+  matrix:
+    # node.js
+    - nodejs_version: "10"
+    - nodejs_version: "8"
+    - nodejs_version: "6"
+
+install:
+  - ps: Install-Product node $env:nodejs_version
+  - yarn
+
+test_script:
+  - node --version
+  - yarn --version
+  - yarn run coverage
+
+build: off
+
+# build version format
+version: "{build}"
