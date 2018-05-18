@@ -968,16 +968,34 @@ function createInstanceWithDefaults() {
 				} else {
 					// no list, pick a brightness and then load the lookup table and pick a color
 					const brightness = (hash % Math.max(1, this._maxBrightness - this._minBrightness)) + this._minBrightness;
-					const bytes = decompress(fs.readFileSync(`${__dirname}/../lookup/${brightness}.br`));
+					const buffer = Buffer.from(decompress(fs.readFileSync(`${__dirname}/../lookup/${brightness}.br`)));
 
 					/* istanbul ignore if */
-					if (bytes.length === 0 || bytes.length % 3 !== 0) {
+					if (buffer.length === 0) {
 						// this should never happen
 						return text;
 					}
 
-					const idx = (hash % (bytes.length / 3)) * 3;
-					color = this._autoCache[hash] = [ bytes[idx], bytes[idx + 1], bytes[idx + 2] ];
+					const numColors = buffer.readUInt32LE(0);
+					const idx = hash % numColors;
+					let offset = 4;
+					let total = 0;
+
+					while (offset < buffer.length) {
+						const count = buffer.readUInt8(offset++);
+						let num = buffer.readUInt32LE(offset);
+						offset += 4;
+
+						// console.log(`count=${count} num=${num} offset=${offset}`);
+
+						if (idx >= total && idx <= (total + count)) {
+							num += idx - total;
+							color = this._autoCache[hash] = [ (num >> 16) & 0xFF, (num >> 8) & 0xFF, num & 0xFF ];
+							break;
+						}
+
+						total += count;
+					}
 				}
 			}
 
@@ -1040,8 +1058,6 @@ function isJSON(it) {
 	const proto = Object.getPrototypeOf(it);
 	return proto && proto.constructor && proto.constructor.name === 'Object';
 }
-
-exports = module.exports = instance;
 
 export default instance;
 

@@ -30,7 +30,7 @@
         "no-case-declarations": 0,
         "no-cond-assign": 0,
         "no-console": 0,
-		"no-control-regex": 0,
+        "no-control-regex": 0,
         "no-empty": 1,
         "no-inner-declarations": 0,
         "no-mixed-spaces-and-tabs": 2,

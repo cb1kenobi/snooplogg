@@ -2,6 +2,7 @@
 
 const $ = require('gulp-load-plugins')();
 const del = require('del');
+const fs = require('fs');
 const gulp = require('gulp');
 const manifest = require('./package.json');
 const path = require('path');
@@ -30,24 +31,41 @@ gulp.task('build', ['clean-dist', 'lint-src'], function () {
 		.src('src/**/*.js')
 		.pipe($.plumber())
 		.pipe($.debug({ title: 'build' }))
+		.pipe($.sourcemaps.init())
 		.pipe($.babel({
-			sourceMaps: 'inline'
+			sourceRoot: 'src'
 		}))
+		.pipe($.sourcemaps.write())
 		.pipe(gulp.dest(distDir));
 });
 
-gulp.task('docs', ['lint-src', 'clean-docs'], function () {
-	return gulp.src('src')
-		.pipe($.plumber())
-		.pipe($.debug({ title: 'docs' }))
-		.pipe($.esdoc({
-			// debug: true,
-			destination: docsDir,
-			plugins: [
-				{ name: 'esdoc-es7-plugin' }
-			],
-			title: manifest.name
-		}));
+gulp.task('docs', ['lint-src', 'clean-docs'], () => {
+	const esdoc = require('esdoc').default;
+
+	esdoc.generate({
+		// debug: true,
+		destination: docsDir,
+		plugins: [
+			{
+				name: 'esdoc-standard-plugin',
+				option: {
+					brand: {
+						title:       manifest.name,
+						description: manifest.description,
+						respository: 'https://github.com/cb1kenobi/cli-kit',
+						site:        'https://github.com/cb1kenobi/cli-kit'
+					}
+				}
+			},
+			{
+				name: 'esdoc-ecmascript-proposal-plugin',
+				option: {
+					all: true
+				}
+			}
+		],
+		source: './src'
+	});
 });
 
 /*
@@ -75,13 +93,21 @@ gulp.task('coverage-only', ['clean-coverage', 'lint-test'], () => runTests(true)
 
 function runTests(cover) {
 	const args = [];
+	let { execPath } = process;
 
 	// add nyc
 	if (cover) {
+		const nycModuleBinDir = resolveModuleBin('nyc');
+		if (process.platform === 'win32') {
+			execPath = path.join(nycModuleBinDir, 'nyc.cmd');
+		} else {
+			args.push(path.join(nycModuleBinDir, 'nyc'));
+		}
+
 		args.push(
-			path.resolve(__dirname, 'node_modules', '.bin', 'nyc'),
 			'--cache', 'false',
 			'--exclude', 'test',
+			'--exclude', '!test/examples',
 			'--instrument', 'false',
 			'--source-map', 'false',
 			// supported reporters:
@@ -94,12 +120,18 @@ function runTests(cover) {
 			'--show-process-tree',
 			process.execPath // need to specify node here so that spawn-wrap works
 		);
+
 		process.env.FORCE_COLOR = 1;
 		process.env.COVERAGE = 1;
 	}
 
 	// add mocha
-	args.push(path.resolve(__dirname, 'node_modules', '.bin', 'mocha'));
+	const mocha = resolveModule('mocha');
+	if (!mocha) {
+		log('Unable to find mocha!');
+		process.exit(1);
+	}
+	args.push(path.join(mocha, 'bin', 'mocha'));
 
 	// add --inspect
 	if (process.argv.indexOf('--inspect') !== -1 || process.argv.indexOf('--inspect-brk') !== -1) {
@@ -128,10 +160,31 @@ function runTests(cover) {
 		args.push('test/**/test-*.js');
 	}
 
-	$.util.log('Running: ' + $.util.colors.cyan(process.execPath + ' ' + args.join(' ')));
+	$.util.log('Running: ' + $.util.colors.cyan(execPath + ' ' + args.join(' ')));
 
 	// run!
-	spawnSync(process.execPath, args, { stdio: 'inherit' });
+	if (spawnSync(execPath, args, { stdio: 'inherit' }).status) {
+		const err = new Error('At least one test failed :(');
+		err.showStack = false;
+		throw err;
+	}
+}
+
+function resolveModuleBin(name) {
+	return path.resolve(resolveModule(name), '..', '.bin');
+}
+
+function resolveModule(name) {
+	let dir = path.resolve(__dirname, 'node_modules', name);
+	if (fs.existsSync(dir)) {
+		return dir;
+	}
+
+	try {
+		return path.dirname(require.resolve(name));
+	} catch (e) {
+		return null;
+	}
 }
 
 gulp.task('default', ['build']);

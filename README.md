@@ -71,21 +71,6 @@ const log = snooplogg
 log.info('yippy', 'yo');
 ```
 
-```bash
-# macOS and Linux
-$ DEBUG=izzle node loggfather.js
-
-# Windows PowerShell
-> $Env:DEBUG="izzle" node loggfather.js
-
-# Windows Command Prompt
-> set DEBUG=izzle
-> node loggfather.js
-```
-
-> Note: You may also use the `SNOOPLOGG` environment variable to avoid conflicts
-> with other libraries that use [debug](https://www.npmjs.com/package/debug)
-
 Listen for messages from all `SnoopLogg` instances, even from other
 dependencies.
 
@@ -144,6 +129,35 @@ Allows you to set various instance specific options.
   to new pipes.
 
 Returns the original `SnoopLogg` instance.
+
+### Enabling Logging
+
+By default, Snooplogg only prints messages if the the `DEBUG` or `SNOOPLOGG` environment variables
+are set.
+
+```bash
+# macOS and Linux
+$ DEBUG=izzle node loggfather.js
+
+# Windows PowerShell
+> $Env:DEBUG="izzle" node loggfather.js
+
+# Windows Command Prompt
+> set DEBUG=izzle
+> node loggfather.js
+```
+
+> Note: You may also use the `SNOOPLOGG` environment variable to avoid conflicts
+> with other libraries that use [debug](https://www.npmjs.com/package/debug)
+
+You can also use any environment variable you want by simply calling `enable()` before logging.
+
+```javascript
+import snooplogg from 'snooplogg';
+
+// change the global environment variable name
+snooplogg.enable(process.env.LOGGFATHER);
+```
 
 ### Global Defaults
 
