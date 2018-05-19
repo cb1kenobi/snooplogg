@@ -1,7 +1,6 @@
 // travis doesn't support colors, so we have to force it
 process.env.FORCE_COLOR = 1;
-
-console.log(process.env);
+delete process.env.CI; // supports-colors really hates us
 
 global.chai = require('chai');
 global.chai.use(require('chai-as-promised'));
