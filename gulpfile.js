@@ -162,8 +162,14 @@ function runTests(cover) {
 
 	$.util.log('Running: ' + $.util.colors.cyan(execPath + ' ' + args.join(' ')));
 
+	const env = Object.assign({}, process.env, {
+		FORCE_COLOR: 1,
+		COLORTERM: 'truecolor'
+	});
+	delete env.CI;
+
 	// run!
-	if (spawnSync(execPath, args, { stdio: 'inherit' }).status) {
+	if (spawnSync(execPath, args, { env, stdio: 'inherit' }).status) {
 		const err = new Error('At least one test failed :(');
 		err.showStack = false;
 		throw err;
