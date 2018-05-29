@@ -1012,30 +1012,20 @@ function createInstanceWithDefaults() {
 			const ts = msg.ts instanceof Date ? msg.ts : new Date(msg.ts);
 			const prefix = this.applyStyle('magenta', ts.toISOString()) + ' ' + (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
 			const args = this._inspectOptions ? msg.args.map(it => isJSON(it) ? util.inspect(it, this._inspectOptions) : it) : msg.args;
-			return util.format
-				.apply(null, args)
-				.split('\n')
-				.map(s => prefix + s)
-				.join('\n')
-				+ '\n';
+			const result = util.format.apply(null, args);
+			return `${prefix ? result.split('\n').map(s => prefix + s).join('\n') : result}\n`;
 		})
 		.theme('standard', function (msg) {
 			const ns = this.applyStyle(msg.nsStyle || 'auto', msg.ns);
 			const type = this.applyStyle(msg.typeStyle, msg.typeLabel);
 			const prefix = (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
 			const args = this._inspectOptions ? msg.args.map(it => isJSON(it) ? util.inspect(it, this._inspectOptions) : it) : msg.args;
-			return util.format
-				.apply(null, args)
-				.split('\n')
-				.map(s => prefix + s)
-				.join('\n')
-				+ '\n';
+			const result = util.format.apply(null, args);
+			return `${prefix ? result.split('\n').map(s => prefix + s).join('\n') : result}\n`;
 		})
 		.theme('minimal', function (msg) {
 			const args = this._inspectOptions ? msg.args.map(it => isJSON(it) ? util.inspect(it, this._inspectOptions) : it) : msg.args;
-			return util.format
-				.apply(null, args)
-				+ '\n';
+			return `${util.format.apply(null, args)}\n`;
 		});
 }
 

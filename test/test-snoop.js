@@ -1088,7 +1088,13 @@ describe('SnoopLogg', () => {
 			_write(msg, enc, cb) {
 				try {
 					expect(msg).to.be.instanceof(Buffer);
-					expect(msg.toString()).to.equal('{ foo: \u001b[32m\'bar\'\u001b[39m,\n  baz: \u001b[33m123\u001b[39m,\n  undef: \u001b[90mundefined\u001b[39m }\n');
+
+					if (parseInt(process.version.substring(1)) >= 10) {
+						expect(msg.toString()).to.equal('{ foo:\n   \u001b[32m\'bar\'\u001b[39m,\n  baz:\n   \u001b[33m123\u001b[39m,\n  undef: \u001b[90mundefined\u001b[39m }\n');
+					} else {
+						expect(msg.toString()).to.equal('{ foo: \u001b[32m\'bar\'\u001b[39m,\n  baz: \u001b[33m123\u001b[39m,\n  undef: \u001b[90mundefined\u001b[39m }\n');
+					}
+
 					cb();
 				} catch (e) {
 					cb(e);
