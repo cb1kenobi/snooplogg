@@ -107,7 +107,6 @@ function runTests(cover) {
 		args.push(
 			'--cache', 'false',
 			'--exclude', 'test',
-			'--exclude', '!test/examples',
 			'--instrument', 'false',
 			'--source-map', 'false',
 			// supported reporters:
