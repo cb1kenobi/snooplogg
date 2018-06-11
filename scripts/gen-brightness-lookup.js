@@ -65,16 +65,20 @@ for (brightness = 0; brightness < 256; brightness++) {
 	}
 
 	// build the before buffer
-	const size = Math.max(4 + (ranges.length * 4) + ranges.length, 80);
+	const size = Math.max(4 + (ranges.length * 8), 80);
 	const before = Buffer.alloc(size);
 	before.writeUInt32LE(total, 0); // total colors in this brightness
 
 	let offset = 4;
 	for (let i = 0; i < ranges.length; i++) {
-		before.writeUInt8(ranges[i].length, offset++); // number of colors in the range
+		before.writeUInt32LE(ranges[i].length, offset); // number of colors in the range
+		offset += 4;
 		before.writeUInt32LE(ranges[i][0], offset);    // integer representation of rgb value
 		offset += 4;
 	}
+
+	const blen = before.length;
+	totalBefore += blen;
 
 	let after;
 	do {
@@ -84,20 +88,21 @@ for (brightness = 0; brightness < 256; brightness++) {
 		}
 	} while (!after);
 
-	const blen = before.length;
 	const alen = after.length;
-
-	totalBefore += blen;
 	totalAfter += alen;
-
-	console.log(`Brightness: ${brightness}\tColors: ${total}\tRanges: ${ranges.length}\tSize: ${size}\tBefore: ${blen}\tAfter: ${alen}\t(${Math.round((blen - alen) / blen * 1000) / 10}%)`);
 
 	fs.writeFileSync(
 		`${outputDir}/${brightness}.br`,
 		after,
 		{ encoding: 'binary' }
 	);
+
+	console.log(`Brightness: ${brightness}\tColors: ${total}\tRanges: ${ranges.length}\tSize: ${size}\tBefore: ${blen}\tAfter: ${alen}\t(${percent(blen, alen)})`);
 }
 
 console.log('\nFinished in %s ms', Date.now() - start);
-console.log('%s bytes => %s bytes', totalBefore, totalAfter);
+console.log('%s bytes => %s bytes (%s)', totalBefore, totalAfter, percent(totalBefore, totalAfter));
+
+function percent(before, after) {
+	return `${Math.round((before - after) / before * 1000) / 10}%`;
+}

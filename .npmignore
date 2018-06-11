@@ -12,6 +12,7 @@ gulpfile.js
 node_modules
 npm-debug.log
 scripts
+yarn.lock
 yarn-error.log
 src
 test

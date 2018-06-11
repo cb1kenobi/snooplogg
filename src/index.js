@@ -982,7 +982,9 @@ function createInstanceWithDefaults() {
 					let total = 0;
 
 					while (offset < buffer.length) {
-						const count = buffer.readUInt8(offset++);
+						const count = buffer.readUInt32LE(offset);
+						offset += 4;
+
 						let num = buffer.readUInt32LE(offset);
 						offset += 4;
 
