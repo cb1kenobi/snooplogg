@@ -1,7 +1,6 @@
 # SnoopLogg
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/cb1kenobi/snooplogg.svg)](https://greenkeeper.io/)
-
 [![NPM Version][npm-image]][npm-url]
 [![NPM Downloads][downloads-image]][downloads-url]
 [![Travis CI Build][travis-image]][travis-url]
@@ -123,9 +122,9 @@ Allows you to set various instance specific options.
 * `colors` - (Array) An array of color names to choose from when auto-selecting a color,
   specifically for rendering the namespace.
 * `minBrightness` - (Number) The minimum brightness to auto-select a color. Value must be between 0
-  and 255 as well as less than or equal to the `maxBrightness`. Defaults to `0`.
+  and 255 as well as less than or equal to the `maxBrightness`. Defaults to `80`.
 * `maxBrightness` - (Number) The maximum brightness to auto-select a color. Value must be between 0
-  and 255 as well as greater than or equal to the `minBrightness`. Defaults to `255`.
+  and 255 as well as greater than or equal to the `minBrightness`. Defaults to `210`.
 * `theme` - (String) The name of the default theme to use. Defaults to `standard`.
 * `maxBufferSize` - (Number) The maximum number of log lines to buffer. Used to flush prior messages
   to new pipes.

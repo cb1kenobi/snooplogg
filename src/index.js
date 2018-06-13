@@ -175,10 +175,10 @@ class SnoopLogg extends Logger {
 				},
 
 				/**
-				 * The minumum brightness when auto-selecting a color.
+				 * The minumum brightness when auto-selecting a color. Defaults to `80`.
 				 * @type {Number}
 				 */
-				_minBrightness: { writable: true, value: process.env.SNOOPLOGG_MIN_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MIN_BRIGHTNESS))) : 0 },
+				_minBrightness: { writable: true, value: process.env.SNOOPLOGG_MIN_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MIN_BRIGHTNESS))) : 80 },
 
 				/**
 				 * A list of middlewares to call and process log messages prior
@@ -188,10 +188,10 @@ class SnoopLogg extends Logger {
 				_middlewares: { value: [] },
 
 				/**
-				 * The maximum brightness when auto-selecting a color.
+				 * The maximum brightness when auto-selecting a color. Defaults to `210`.
 				 * @type {Number}
 				 */
-				_maxBrightness: { writable: true, value: process.env.SNOOPLOGG_MAX_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BRIGHTNESS))) : 255 },
+				_maxBrightness: { writable: true, value: process.env.SNOOPLOGG_MAX_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BRIGHTNESS))) : 210 },
 
 				/**
 				 * A list of objects containing the stream and theme name.
