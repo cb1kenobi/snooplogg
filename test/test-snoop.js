@@ -1067,7 +1067,7 @@ describe('SnoopLogg', () => {
 			_write(msg, enc, cb) {
 				try {
 					expect(msg).to.be.instanceof(Buffer);
-					expect(msg.toString()).to.equal('\u001b[38;2;1;120;119mfoo\u001b[39m log() test\n');
+					expect(msg.toString()).to.equal('\u001b[38;2;232;90;19mfoo\u001b[39m log() test\n');
 					cb();
 				} catch (e) {
 					cb(e);
