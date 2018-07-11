@@ -443,7 +443,10 @@ class SnoopLogg extends Logger {
 
 			if (allows.length) {
 				this._allow = new RegExp(`^(${allows.join('|')})$`);
+			} else {
+				this._allow = /./;
 			}
+
 			if (ignores.length) {
 				this._ignore = new RegExp(`^(${ignores.join('|')})$`);
 			}
