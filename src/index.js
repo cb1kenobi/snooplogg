@@ -175,10 +175,10 @@ class SnoopLogg extends Logger {
 				},
 
 				/**
-				 * The minumum brightness when auto-selecting a color.
+				 * The minumum brightness when auto-selecting a color. Defaults to `80`.
 				 * @type {Number}
 				 */
-				_minBrightness: { writable: true, value: process.env.SNOOPLOGG_MIN_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MIN_BRIGHTNESS))) : 0 },
+				_minBrightness: { writable: true, value: process.env.SNOOPLOGG_MIN_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MIN_BRIGHTNESS))) : 80 },
 
 				/**
 				 * A list of middlewares to call and process log messages prior
@@ -188,10 +188,10 @@ class SnoopLogg extends Logger {
 				_middlewares: { value: [] },
 
 				/**
-				 * The maximum brightness when auto-selecting a color.
+				 * The maximum brightness when auto-selecting a color. Defaults to `210`.
 				 * @type {Number}
 				 */
-				_maxBrightness: { writable: true, value: process.env.SNOOPLOGG_MAX_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BRIGHTNESS))) : 255 },
+				_maxBrightness: { writable: true, value: process.env.SNOOPLOGG_MAX_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BRIGHTNESS))) : 210 },
 
 				/**
 				 * A list of objects containing the stream and theme name.
@@ -443,7 +443,10 @@ class SnoopLogg extends Logger {
 
 			if (allows.length) {
 				this._allow = new RegExp(`^(${allows.join('|')})$`);
+			} else {
+				this._allow = /./;
 			}
+
 			if (ignores.length) {
 				this._ignore = new RegExp(`^(${ignores.join('|')})$`);
 			}
@@ -968,16 +971,36 @@ function createInstanceWithDefaults() {
 				} else {
 					// no list, pick a brightness and then load the lookup table and pick a color
 					const brightness = (hash % Math.max(1, this._maxBrightness - this._minBrightness)) + this._minBrightness;
-					const bytes = decompress(fs.readFileSync(`${__dirname}/../lookup/${brightness}.br`));
+					const buffer = Buffer.from(decompress(fs.readFileSync(`${__dirname}/../lookup/${brightness}.br`)));
 
 					/* istanbul ignore if */
-					if (bytes.length === 0 || bytes.length % 3 !== 0) {
+					if (buffer.length === 0) {
 						// this should never happen
 						return text;
 					}
 
-					const idx = (hash % (bytes.length / 3)) * 3;
-					color = this._autoCache[hash] = [ bytes[idx], bytes[idx + 1], bytes[idx + 2] ];
+					const numColors = buffer.readUInt32LE(0);
+					const idx = hash % numColors;
+					let offset = 4;
+					let total = 0;
+
+					while (offset < buffer.length) {
+						const count = buffer.readUInt32LE(offset);
+						offset += 4;
+
+						let num = buffer.readUInt32LE(offset);
+						offset += 4;
+
+						// console.log(`count=${count} num=${num} offset=${offset}`);
+
+						if (idx >= total && idx <= (total + count)) {
+							num += idx - total;
+							color = this._autoCache[hash] = [ (num >> 16) & 0xFF, (num >> 8) & 0xFF, num & 0xFF ];
+							break;
+						}
+
+						total += count;
+					}
 				}
 			}
 
@@ -994,30 +1017,20 @@ function createInstanceWithDefaults() {
 			const ts = msg.ts instanceof Date ? msg.ts : new Date(msg.ts);
 			const prefix = this.applyStyle('magenta', ts.toISOString()) + ' ' + (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
 			const args = this._inspectOptions ? msg.args.map(it => isJSON(it) ? util.inspect(it, this._inspectOptions) : it) : msg.args;
-			return util.format
-				.apply(null, args)
-				.split('\n')
-				.map(s => prefix + s)
-				.join('\n')
-				+ '\n';
+			const result = util.format.apply(null, args);
+			return `${prefix ? result.split('\n').map(s => prefix + s).join('\n') : result}\n`;
 		})
 		.theme('standard', function (msg) {
 			const ns = this.applyStyle(msg.nsStyle || 'auto', msg.ns);
 			const type = this.applyStyle(msg.typeStyle, msg.typeLabel);
 			const prefix = (ns ? ns + ' ' : '') + (type ? type + ' ' : '');
 			const args = this._inspectOptions ? msg.args.map(it => isJSON(it) ? util.inspect(it, this._inspectOptions) : it) : msg.args;
-			return util.format
-				.apply(null, args)
-				.split('\n')
-				.map(s => prefix + s)
-				.join('\n')
-				+ '\n';
+			const result = util.format.apply(null, args);
+			return `${prefix ? result.split('\n').map(s => prefix + s).join('\n') : result}\n`;
 		})
 		.theme('minimal', function (msg) {
 			const args = this._inspectOptions ? msg.args.map(it => isJSON(it) ? util.inspect(it, this._inspectOptions) : it) : msg.args;
-			return util.format
-				.apply(null, args)
-				+ '\n';
+			return `${util.format.apply(null, args)}\n`;
 		});
 }
 
@@ -1040,8 +1053,6 @@ function isJSON(it) {
 	const proto = Object.getPrototypeOf(it);
 	return proto && proto.constructor && proto.constructor.name === 'Object';
 }
-
-exports = module.exports = instance;
 
 export default instance;
 

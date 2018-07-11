@@ -1,5 +1,6 @@
 # SnoopLogg
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/cb1kenobi/snooplogg.svg)](https://greenkeeper.io/)
 [![NPM Version][npm-image]][npm-url]
 [![NPM Downloads][downloads-image]][downloads-url]
 [![Travis CI Build][travis-image]][travis-url]
@@ -71,21 +72,6 @@ const log = snooplogg
 log.info('yippy', 'yo');
 ```
 
-```bash
-# macOS and Linux
-$ DEBUG=izzle node loggfather.js
-
-# Windows PowerShell
-> $Env:DEBUG="izzle" node loggfather.js
-
-# Windows Command Prompt
-> set DEBUG=izzle
-> node loggfather.js
-```
-
-> Note: You may also use the `SNOOPLOGG` environment variable to avoid conflicts
-> with other libraries that use [debug](https://www.npmjs.com/package/debug)
-
 Listen for messages from all `SnoopLogg` instances, even from other
 dependencies.
 
@@ -136,14 +122,43 @@ Allows you to set various instance specific options.
 * `colors` - (Array) An array of color names to choose from when auto-selecting a color,
   specifically for rendering the namespace.
 * `minBrightness` - (Number) The minimum brightness to auto-select a color. Value must be between 0
-  and 255 as well as less than or equal to the `maxBrightness`. Defaults to `0`.
+  and 255 as well as less than or equal to the `maxBrightness`. Defaults to `80`.
 * `maxBrightness` - (Number) The maximum brightness to auto-select a color. Value must be between 0
-  and 255 as well as greater than or equal to the `minBrightness`. Defaults to `255`.
+  and 255 as well as greater than or equal to the `minBrightness`. Defaults to `210`.
 * `theme` - (String) The name of the default theme to use. Defaults to `standard`.
 * `maxBufferSize` - (Number) The maximum number of log lines to buffer. Used to flush prior messages
   to new pipes.
 
 Returns the original `SnoopLogg` instance.
+
+### Enabling Logging
+
+By default, Snooplogg only prints messages if the the `DEBUG` or `SNOOPLOGG` environment variables
+are set.
+
+```bash
+# macOS and Linux
+$ DEBUG=izzle node loggfather.js
+
+# Windows PowerShell
+> $Env:DEBUG="izzle" node loggfather.js
+
+# Windows Command Prompt
+> set DEBUG=izzle
+> node loggfather.js
+```
+
+> Note: You may also use the `SNOOPLOGG` environment variable to avoid conflicts
+> with other libraries that use [debug](https://www.npmjs.com/package/debug)
+
+You can also use any environment variable you want by simply calling `enable()` before logging.
+
+```javascript
+import snooplogg from 'snooplogg';
+
+// change the global environment variable name
+snooplogg.enable(process.env.LOGGFATHER);
+```
 
 ### Global Defaults
 

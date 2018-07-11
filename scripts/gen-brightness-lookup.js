@@ -6,7 +6,6 @@ const brotli = require('brotli');
 const del = require('del');
 const fs = require('fs');
 const path = require('path');
-const zlib = require('zlib');
 
 const results = {};
 const start = Date.now();
@@ -21,6 +20,7 @@ try {
 	console.log('Creating lookup directory...');
 	fs.mkdirSync(outputDir);
 }
+
 const files = fs.readdirSync(outputDir);
 if (files.length) {
 	console.log('Cleaning lookup directory...');
@@ -37,40 +37,72 @@ for (let b = 0; b <= 255; b++) {
 			if (!results[brightness]) {
 				results[brightness] = [];
 			}
-			results[brightness].push(r, g, b);
+			results[brightness].push((r << 16) + (g << 8) + b);
 		}
 	}
 }
 
-console.log('Writing lookup files...');
-for (brightness of Object.keys(results)) {
-	let colors = results[brightness];
-	let before;
-	let after;
+console.log();
 
+for (brightness = 0; brightness < 256; brightness++) {
+	const colors = results[brightness].sort((a, b) => a < b ? -1 : a > b ? 1 : 0);
+	const total = colors.length;
+	let last = colors.shift();
+	const ranges = [];
+	let range = 0;
+
+	// build the ranges
+	ranges[range] = [ last ];
+	for (const i of colors) {
+		if (i > last + 1) {
+			range++;
+		}
+		if (!Array.isArray(ranges[range])) {
+			ranges[range] = [];
+		}
+		ranges[range].push(i);
+		last = i;
+	}
+
+	// build the before buffer
+	const size = Math.max(4 + (ranges.length * 8), 80);
+	const before = Buffer.alloc(size);
+	before.writeUInt32LE(total, 0); // total colors in this brightness
+
+	let offset = 4;
+	for (let i = 0; i < ranges.length; i++) {
+		before.writeUInt32LE(ranges[i].length, offset); // number of colors in the range
+		offset += 4;
+		before.writeUInt32LE(ranges[i][0], offset);    // integer representation of rgb value
+		offset += 4;
+	}
+
+	const blen = before.length;
+	totalBefore += blen;
+
+	let after;
 	do {
-		before = Buffer.from(colors);
 		after = brotli.compress(before);
 		if (!after) {
-			// when brightness=255, there's only 1 color (3 bytes) and it's not enough bytes to make brotli happy
-			colors = colors.concat(colors.slice(0, 3));
+			before.writeUInt8(0, offset++);
 		}
 	} while (!after);
 
-	const blen = before.length;
 	const alen = after.length;
-
-	totalBefore += blen;
 	totalAfter += alen;
-
-	console.log('%s\t%s => %s\t(%s\%)', brightness, blen, alen, Math.round((blen - alen) / blen * 1000) / 10);
 
 	fs.writeFileSync(
 		`${outputDir}/${brightness}.br`,
 		after,
 		{ encoding: 'binary' }
 	);
+
+	console.log(`Brightness: ${brightness}\tColors: ${total}\tRanges: ${ranges.length}\tSize: ${size}\tBefore: ${blen}\tAfter: ${alen}\t(${percent(blen, alen)})`);
 }
 
-console.log('Finished in %s ms', Date.now() - start);
-console.log('%s bytes => %s bytes', totalBefore, totalAfter);
+console.log('\nFinished in %s ms', Date.now() - start);
+console.log('%s bytes => %s bytes (%s)', totalBefore, totalAfter, percent(totalBefore, totalAfter));
+
+function percent(before, after) {
+	return `${Math.round((before - after) / before * 1000) / 10}%`;
+}

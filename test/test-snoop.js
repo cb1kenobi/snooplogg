@@ -1,4 +1,4 @@
-import snooplogg from '../src/index';
+import snooplogg from '../dist/index';
 import util from 'util';
 
 import {
@@ -24,11 +24,11 @@ import {
 	unsnoop,
 	use,
 	warn
-} from '../src/index';
+} from '../dist/index';
 
 import { Transform, Writable } from 'stream';
 
-import * as local from '../src/index';
+import * as local from '../dist/index';
 
 describe('SnoopLogg', () => {
 	before(() => {
@@ -1067,7 +1067,7 @@ describe('SnoopLogg', () => {
 			_write(msg, enc, cb) {
 				try {
 					expect(msg).to.be.instanceof(Buffer);
-					expect(msg.toString()).to.equal('\u001b[38;2;118;83;1mfoo\u001b[39m log() test\n');
+					expect(msg.toString()).to.equal('\u001b[38;2;232;90;19mfoo\u001b[39m log() test\n');
 					cb();
 				} catch (e) {
 					cb(e);
@@ -1088,7 +1088,13 @@ describe('SnoopLogg', () => {
 			_write(msg, enc, cb) {
 				try {
 					expect(msg).to.be.instanceof(Buffer);
-					expect(msg.toString()).to.equal('{ foo: \u001b[32m\'bar\'\u001b[39m,\n  baz: \u001b[33m123\u001b[39m,\n  undef: \u001b[90mundefined\u001b[39m }\n');
+
+					if (parseInt(process.version.substring(1)) >= 10) {
+						expect(msg.toString()).to.equal('{ foo:\n   \u001b[32m\'bar\'\u001b[39m,\n  baz:\n   \u001b[33m123\u001b[39m,\n  undef: \u001b[90mundefined\u001b[39m }\n');
+					} else {
+						expect(msg.toString()).to.equal('{ foo: \u001b[32m\'bar\'\u001b[39m,\n  baz: \u001b[33m123\u001b[39m,\n  undef: \u001b[90mundefined\u001b[39m }\n');
+					}
+
 					cb();
 				} catch (e) {
 					cb(e);
