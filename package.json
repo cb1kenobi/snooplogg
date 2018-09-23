@@ -20,7 +20,7 @@
     "build": "gulp build",
     "coverage": "gulp coverage",
     "docs": "gulp docs",
-    "prepublish": "gulp build",
+    "prepare": "gulp build",
     "test": "gulp test"
   },
   "dependencies": {
