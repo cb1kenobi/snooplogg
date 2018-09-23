@@ -16,18 +16,18 @@ const docsDir     = path.join(__dirname, 'docs');
 /*
  * Clean tasks
  */
-gulp.task('clean', ['clean-coverage', 'clean-dist', 'clean-docs']);
+gulp.task('clean', [ 'clean-coverage', 'clean-dist', 'clean-docs' ]);
 
-gulp.task('clean-coverage', done => fs.remove(coverageDir, done));
+gulp.task('clean-coverage', cb => fs.remove(coverageDir, cb));
 
-gulp.task('clean-dist', done => fs.remove(distDir, done));
+gulp.task('clean-dist', cb => fs.remove(distDir, cb));
 
-gulp.task('clean-docs', done => fs.remove(docsDir, done));
+gulp.task('clean-docs', cb => fs.remove(docsDir, cb));
 
 /*
  * build tasks
  */
-gulp.task('build', ['clean-dist', 'lint-src'], function () {
+gulp.task('build', [ 'clean-dist', 'lint-src' ], function () {
 	return gulp
 		.src('src/**/*.js')
 		.pipe($.plumber())
@@ -40,7 +40,7 @@ gulp.task('build', ['clean-dist', 'lint-src'], function () {
 		.pipe(gulp.dest(distDir));
 });
 
-gulp.task('docs', ['lint-src', 'clean-docs'], () => {
+gulp.task('docs', [ 'lint-src', 'clean-docs' ], () => {
 	const esdoc = require('esdoc').default;
 
 	esdoc.generate({
