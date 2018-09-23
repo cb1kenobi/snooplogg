@@ -5,7 +5,6 @@
 [![Travis CI Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
 [![Greenkeeper badge][greenkeeper-image]][greenkeeper-url]
-[![Code Climate][codeclimate-image]][codeclimate-url]
 [![Deps][david-image]][david-url]
 [![Dev Deps][david-dev-image]][david-dev-url]
 
@@ -185,8 +184,6 @@ MIT
 [coveralls-url]: https://coveralls.io/r/cb1kenobi/snooplogg
 [greenkeeper-image]: https://badges.greenkeeper.io/cb1kenobi/snooplogg.svg
 [greenkeeper-url]: https://greenkeeper.io/
-[codeclimate-image]: https://img.shields.io/codeclimate/github/cb1kenobi/snooplogg.svg
-[codeclimate-url]: https://codeclimate.com/github/cb1kenobi/snooplogg
 [david-image]: https://img.shields.io/david/cb1kenobi/snooplogg.svg
 [david-url]: https://david-dm.org/cb1kenobi/snooplogg
 [david-dev-image]: https://img.shields.io/david/dev/cb1kenobi/snooplogg.svg
