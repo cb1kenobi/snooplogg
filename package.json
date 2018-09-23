@@ -65,10 +65,7 @@
   },
   "homepage": "https://github.com/cb1kenobi/snooplogg",
   "bugs": "https://github.com/cb1kenobi/snooplogg/issues",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/cb1kenobi/snooplogg.git"
-  },
+  "repository": "https://github.com/cb1kenobi/snooplogg",
   "engines": {
     "node": ">=6.0.0"
   }
