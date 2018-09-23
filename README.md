@@ -1,10 +1,10 @@
 # SnoopLogg
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/cb1kenobi/snooplogg.svg)](https://greenkeeper.io/)
 [![NPM Version][npm-image]][npm-url]
 [![NPM Downloads][downloads-image]][downloads-url]
 [![Travis CI Build][travis-image]][travis-url]
 [![Test Coverage][coveralls-image]][coveralls-url]
+[![Greenkeeper badge][greenkeeper-image]][greenkeeper-url]
 [![Code Climate][codeclimate-image]][codeclimate-url]
 [![Deps][david-image]][david-url]
 [![Dev Deps][david-dev-image]][david-dev-url]
@@ -173,27 +173,7 @@ instances.
 
 ## License
 
-(The MIT License)
-
-Copyright (c) 2017 Chris Barber
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
-THE SOFTWARE.
+MIT
 
 [npm-image]: https://img.shields.io/npm/v/snooplogg.svg
 [npm-url]: https://npmjs.org/package/snooplogg
@@ -203,6 +183,8 @@ THE SOFTWARE.
 [travis-url]: https://travis-ci.org/cb1kenobi/snooplogg
 [coveralls-image]: https://img.shields.io/coveralls/cb1kenobi/snooplogg/master.svg
 [coveralls-url]: https://coveralls.io/r/cb1kenobi/snooplogg
+[greenkeeper-image]: https://badges.greenkeeper.io/cb1kenobi/snooplogg.svg
+[greenkeeper-url]: https://greenkeeper.io/
 [codeclimate-image]: https://img.shields.io/codeclimate/github/cb1kenobi/snooplogg.svg
 [codeclimate-url]: https://codeclimate.com/github/cb1kenobi/snooplogg
 [david-image]: https://img.shields.io/david/cb1kenobi/snooplogg.svg

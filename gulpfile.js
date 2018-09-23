@@ -1,27 +1,28 @@
 'use strict';
 
-const $ = require('gulp-load-plugins')();
-const del = require('del');
-const fs = require('fs');
-const gulp = require('gulp');
-const manifest = require('./package.json');
-const path = require('path');
-const spawnSync = require('child_process').spawnSync;
+const $           = require('gulp-load-plugins')();
+const ansiColors  = require('ansi-colors');
+const fs          = require('fs-extra');
+const gulp        = require('gulp');
+const log         = require('fancy-log');
+const manifest    = require('./package.json');
+const path        = require('path');
+const spawnSync   = require('child_process').spawnSync;
 
 const coverageDir = path.join(__dirname, 'coverage');
-const distDir = path.join(__dirname, 'dist');
-const docsDir = path.join(__dirname, 'docs');
+const distDir     = path.join(__dirname, 'dist');
+const docsDir     = path.join(__dirname, 'docs');
 
 /*
  * Clean tasks
  */
 gulp.task('clean', ['clean-coverage', 'clean-dist', 'clean-docs']);
 
-gulp.task('clean-coverage', done => { del([coverageDir]).then(() => done()) });
+gulp.task('clean-coverage', done => fs.remove(coverageDir, done));
 
-gulp.task('clean-dist', done => { del([distDir]).then(() => done()) });
+gulp.task('clean-dist', done => fs.remove(distDir, done));
 
-gulp.task('clean-docs', done => { del([docsDir]).then(() => done()) });
+gulp.task('clean-docs', done => fs.remove(docsDir, done));
 
 /*
  * build tasks
@@ -86,10 +87,10 @@ gulp.task('lint-test', () => lint('test/**/test-*.js'));
 /*
  * test tasks
  */
-gulp.task('test', ['build', 'lint-test'], () => runTests());
-gulp.task('test-only', ['lint-test'], () => runTests());
-gulp.task('coverage', ['clean-coverage', 'lint-src', 'lint-test'], () => runTests(true));
-gulp.task('coverage-only', ['clean-coverage', 'lint-test'], () => runTests(true));
+gulp.task('test',          [ 'build', 'lint-test' ],                      () => runTests());
+gulp.task('test-only',     [ 'lint-test' ],                               () => runTests());
+gulp.task('coverage',      [ 'clean-coverage', 'lint-src', 'lint-test' ], () => runTests(true));
+gulp.task('coverage-only', [ 'clean-coverage', 'lint-test' ],             () => runTests(true));
 
 function runTests(cover) {
 	const args = [];
@@ -159,7 +160,7 @@ function runTests(cover) {
 		args.push('test/**/test-*.js');
 	}
 
-	$.util.log('Running: ' + $.util.colors.cyan(execPath + ' ' + args.join(' ')));
+	log('Running: ' + ansiColors.cyan(execPath + ' ' + args.join(' ')));
 
 	const env = Object.assign({}, process.env, {
 		FORCE_COLOR: 1,

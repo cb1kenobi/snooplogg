@@ -3,8 +3,8 @@ if (!Error.prepareStackTrace) {
 	require('source-map-support/register');
 }
 
+import bryt from 'bryt';
 import chalk from 'chalk';
-import decompress from 'brotli/decompress';
 import fs from 'fs';
 import NanoBuffer from 'nanobuffer';
 import supportsColor from 'supports-color';
@@ -971,36 +971,15 @@ function createInstanceWithDefaults() {
 				} else {
 					// no list, pick a brightness and then load the lookup table and pick a color
 					const brightness = (hash % Math.max(1, this._maxBrightness - this._minBrightness)) + this._minBrightness;
-					const buffer = Buffer.from(decompress(fs.readFileSync(`${__dirname}/../lookup/${brightness}.br`)));
+					const { count, getColor } = bryt.getBrightness(brightness);
 
 					/* istanbul ignore if */
-					if (buffer.length === 0) {
+					if (!count) {
 						// this should never happen
 						return text;
 					}
 
-					const numColors = buffer.readUInt32LE(0);
-					const idx = hash % numColors;
-					let offset = 4;
-					let total = 0;
-
-					while (offset < buffer.length) {
-						const count = buffer.readUInt32LE(offset);
-						offset += 4;
-
-						let num = buffer.readUInt32LE(offset);
-						offset += 4;
-
-						// console.log(`count=${count} num=${num} offset=${offset}`);
-
-						if (idx >= total && idx <= (total + count)) {
-							num += idx - total;
-							color = this._autoCache[hash] = [ (num >> 16) & 0xFF, (num >> 8) & 0xFF, num & 0xFF ];
-							break;
-						}
-
-						total += count;
-					}
+					color = this._autoCache[hash] = bryt.toRGB(getColor(hash % count));
 				}
 			}
 
