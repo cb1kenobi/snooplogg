@@ -53,8 +53,8 @@ gulp.task('docs', [ 'lint-src', 'clean-docs' ], () => {
 					brand: {
 						title:       manifest.name,
 						description: manifest.description,
-						respository: 'https://github.com/cb1kenobi/snooplogg',
-						site:        'https://github.com/cb1kenobi/snooplogg'
+						respository: manifest.repository,
+						site:        manifest.homepage
 					}
 				}
 			},
