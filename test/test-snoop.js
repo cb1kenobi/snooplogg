@@ -905,13 +905,9 @@ describe('SnoopLogg', () => {
 		instance.unsnoop();
 	});
 
-	it('should expose 3rd party libraries', () => {
+	it('should expose chalk', () => {
 		const instance = createInstanceWithDefaults();
 		expect(instance.chalk).to.be.an('function');
-		expect(instance.humanize).to.be.an('object');
-		expect(instance.moment).to.be.an('function');
-		expect(instance.pluralize).to.be.an('function');
-		expect(instance.symbols).to.be.an('function');
 	});
 
 	it('should log to objectMode stream', () => {

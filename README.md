@@ -14,9 +14,11 @@ Laid back debug logging.
 
     npm install snooplogg
 
+![snooplogg](demo/screenshot.png)
+
 ## Features
 
- * Built-in and custom log levels
+ * Built-in and custom log types
  * Ability to snoop on other snooplogg instances nested in dependencies
  * Pipe messages to one or more streams
  * Namespacing
@@ -31,11 +33,64 @@ Laid back debug logging.
  * Similar API to [TJ's debug](https://www.npmjs.com/package/debug):
    * `const debug = snooplogg('myapp').log;`
 
-![snooplogg](demo/screenshot.png)
+
+
 
 ## Examples
 
-```javascript
+`debug` style:
+
+```js
+// app.js
+
+import snooplogg from 'snooplogg';
+import http from 'http';
+
+// const debug = require('debug')('http');
+const debug = snooplogg('http').log;
+const name = 'My App';
+
+debug('booting %o', name);
+
+http.createServer((req, res) => {
+	debug(`${req.method} ${req.url}`);
+	res.end('hello\n');
+}).listen(3000, () => debug('listening'));
+```
+
+```js
+// worker.js
+
+import snooplogg from 'snooplogg';
+
+const a = snooplogg('worker:a');
+const b = snooplogg('worker:b');
+/*
+Or you could do this:
+
+const worker = snooplogg('worker');
+const a = worker('a');
+const b = worker('b');
+*/
+
+function work_a() {
+  a('doing lots of uninteresting work');
+  setTimeout(work_a, Math.random() * 1000);
+}
+
+work_a();
+
+function work_b() {
+	b('doing some work');
+	setTimeout(work_b, Math.random() * 2000);
+}
+
+work_b();
+```
+
+Standard console usage:
+
+```js
 import log from 'snooplogg';
 
 log.trace('bow'); // writes to stdout/stderr if DEBUG matches + all pipes
@@ -45,14 +100,18 @@ log.info('wow')
    .error('wow');
 ```
 
-```javascript
+Namespace support:
+
+```js
 import snooplogg from 'snooplogg';
 
 const log = snooplogg('myapp');
 log.info('bow', 'wow', 'wow'); // writes to stdout/stderr if DEBUG=myapp + all pipes
 ```
 
-```javascript
+Stream output to stdout:
+
+```js
 import snooplogg from 'snooplogg';
 
 const log = snooplogg.stdio('yippy yo');
@@ -62,7 +121,9 @@ const log = snooplogg.enable('*')('yippy yay');
 log.info('bow', 'wow', 'wow'); // writes to stdout/stderr + all pipes
 ```
 
-```javascript
+Pipe output to a stream (such as a file or socket):
+
+```js
 import snooplogg from 'snooplogg';
 
 const log = snooplogg
@@ -71,10 +132,9 @@ const log = snooplogg
 log.info('yippy', 'yo');
 ```
 
-Listen for messages from all `SnoopLogg` instances, even from other
-dependencies.
+Listen for messages from all `SnoopLogg` instances, even from other dependencies:
 
-```javascript
+```js
 import snooplogg, { snoop } from 'snooplogg';
 
 snoop();
@@ -92,7 +152,9 @@ log.error('and like that');
 log.fatal('and like this');
 ```
 
-```javascript
+Custom log types:
+
+```js
 import snooplogg, { type } from 'snooplogg';
 
 type('jin', { color: 'cyan' });
@@ -152,7 +214,7 @@ $ DEBUG=izzle node loggfather.js
 
 You can also use any environment variable you want by simply calling `enable()` before logging.
 
-```javascript
+```js
 import snooplogg from 'snooplogg';
 
 // change the global environment variable name
