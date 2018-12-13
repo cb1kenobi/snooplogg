@@ -193,9 +193,9 @@
     through2 "^2.0.3"
 
 "@types/node@*":
-  version "10.12.13"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-10.12.13.tgz#ce355eda06f793b42f75b23cd26d328b12649b70"
-  integrity sha512-zMxYcuQETlp8Lw9trEuKa313Zapm9w3EXZ6pT53q229VsHvo9jWDfWq3rUC8SyFfnPexn7uAuC+q3X+GmnTnDg==
+  version "10.12.14"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-10.12.14.tgz#c03b6380c5c301be0499ecd143b99b76ebe45678"
+  integrity sha512-0rVcFRhM93kRGAU88ASCjX9Y3FWDCh+33G5Z5evpKOea4xcpLqDGwmo64+DjgaSezTN5j9KdnUzvxhOw7fNciQ==
 
 abab@^1.0.0:
   version "1.0.4"
@@ -3743,10 +3743,10 @@ nan@^2.9.2:
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.11.1.tgz#90e22bccb8ca57ea4cd37cc83d3819b52eea6766"
   integrity sha512-iji6k87OSXa0CcrLl9z+ZiYSuR2o+c0bGuNmXdrhTQTakxytAFsC56SArGYoiHlJlFoHSnvmhpceZJaXkVuOtA==
 
-nanobuffer@^1.1.2:
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/nanobuffer/-/nanobuffer-1.1.2.tgz#5bc4fb2368be7be88eb2c68783e41e2876211988"
-  integrity sha512-8ozQ+VD2kvk2mOVhNUCu2UDyuLbKZuh/8yBv1v/kKmDfMhMbzAJRBeSVJn5C5iZYPR1Q6jxOLKgnkavDQC1YIA==
+nanobuffer@^1.1.3:
+  version "1.1.3"
+  resolved "https://registry.yarnpkg.com/nanobuffer/-/nanobuffer-1.1.3.tgz#19d88a68c72bc151c2763cc8b572c96942e432f8"
+  integrity sha512-gAHcl2SeA30wix6dQWjUyFuLf0YQJX69IEZ6Qcl7S4MTIZQCnOTJUum2n+sZlhUEsrchNCx+eePCpajFhorY5g==
   dependencies:
     source-map-support "^0.5.9"
 
