@@ -14,6 +14,7 @@
         "sourceType": "module"
     },
     "plugins": [
+        "chai-expect",
         "mocha",
         "security"
     ],
@@ -22,6 +23,8 @@
         "array-bracket-spacing": [ "error", "always", { "objectsInArrays": false, "arraysInArrays": false } ],
         "brace-style": [ 2, "1tbs", { "allowSingleLine": true } ],
         "camelcase": 0,
+        "chai-expect/missing-assertion": 2,
+        "chai-expect/terminating-properties": 1,
         "curly": [ 2, "all" ],
         "eol-last": 2,
         "indent": [ 2, "tab", { "SwitchCase": 1 } ],

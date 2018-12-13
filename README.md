@@ -24,17 +24,8 @@ Laid back debug logging.
  * Namespacing
  * Filter messages using the `DEBUG` (or `SNOOPLOGG`) environment variable
  * Automatic color selection with brightness range
- * Includes helper libraries for your convenience
-   * [chalk](https://www.npmjs.com/pacakge/chalk)
-   * [figures](https://www.npmjs.com/package/figures) (exported as `symbols`)
-   * [humanize](https://www.npmjs.com/package/humanize)
-   * [moment](https://www.npmjs.com/package/moment)
-   * [pluralize](https://www.npmjs.com/package/pluralize)
+ * Exports [chalk](https://www.npmjs.com/pacakge/chalk) library for your convenience.
  * Similar API to [TJ's debug](https://www.npmjs.com/package/debug):
-   * `const debug = snooplogg('myapp').log;`
-
-
-
 
 ## Examples
 
@@ -220,6 +211,10 @@ import snooplogg from 'snooplogg';
 // change the global environment variable name
 snooplogg.enable(process.env.LOGGFATHER);
 ```
+
+> Note: The console log types (`info`, `warn`, `error`, etc) are for display only. `snooplogg` does
+> not support log level filtering, only namespace filtering via the `SNOOPLOGG` (or `DEBUG`)
+> environment variable or by `enable()`.
 
 ### Global Defaults
 

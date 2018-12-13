@@ -837,7 +837,7 @@ describe('SnoopLogg', () => {
 	it('should flush buffered snooped messages', () => {
 		class MockOutputStream extends Writable {
 			_write(msg, enc, cb) {
-				expect(msg.toString()).to.equal('\u001b[34mfoo\u001b[39m test!\n');
+				expect(msg.toString()).to.match(/^\u001b\[[0-9;]+mfoo\u001b\[39m test!\n$/);
 				cb();
 			}
 		}
@@ -990,7 +990,7 @@ describe('SnoopLogg', () => {
 			_write(msg, enc, cb) {
 				try {
 					expect(msg).to.be.instanceof(Buffer);
-					expect(msg.toString()).to.match(/\u001b\[32minfo\u001b\[39m info\(\) test\n$/);
+					expect(msg.toString()).to.match(/^\u001b\[[0-9;]+m\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z\u001b\[39m \u001b\[[0-9;]+minfo\u001b\[39m info\(\) test\n$/);
 					cb();
 				} catch (e) {
 					cb(e);
@@ -1036,7 +1036,7 @@ describe('SnoopLogg', () => {
 			_write(msg, enc, cb) {
 				try {
 					expect(msg).to.be.instanceof(Buffer);
-					expect(msg.toString()).to.equal('\u001b[38;2;255;255;255mfoo\u001b[39m bar!\n');
+					expect(msg.toString()).to.match(/^\u001b\[[0-9;]+mfoo\u001b\[39m bar!\n$/);
 					cb();
 				} catch (e) {
 					cb(e);
@@ -1063,7 +1063,7 @@ describe('SnoopLogg', () => {
 			_write(msg, enc, cb) {
 				try {
 					expect(msg).to.be.instanceof(Buffer);
-					expect(msg.toString()).to.equal('\u001b[38;2;232;90;19mfoo\u001b[39m log() test\n');
+					expect(msg.toString()).to.match(/^\u001b\[[0-9;]+mfoo\u001b\[39m log\(\) test\n$/);
 					cb();
 				} catch (e) {
 					cb(e);
