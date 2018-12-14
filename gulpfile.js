@@ -1,13 +1,13 @@
 'use strict';
 
-const $           = require('gulp-load-plugins')();
-const ansiColors  = require('ansi-colors');
-const fs          = require('fs-extra');
-const gulp        = require('gulp');
-const log         = require('fancy-log');
-const manifest    = require('./package.json');
-const path        = require('path');
-const spawnSync   = require('child_process').spawnSync;
+const $          = require('gulp-load-plugins')();
+const ansiColors = require('ansi-colors');
+const fs         = require('fs-extra');
+const gulp       = require('gulp');
+const log        = require('fancy-log');
+const manifest   = require('./package.json');
+const path       = require('path');
+const spawnSync  = require('child_process').spawnSync;
 
 const { parallel, series } = gulp;
 
@@ -42,7 +42,7 @@ exports.lint = parallel(lintSrc, lintTest);
 /*
  * build tasks
  */
-async function build() {
+function build() {
 	return gulp
 		.src('src/**/*.js')
 		.pipe($.plumber())
@@ -184,7 +184,7 @@ function resolveModule(name) {
 	}
 }
 
-exports.test             = series(parallel(lintTest, build),                () => runTests());
-exports['test-only']     = series(lintTest,                                 () => runTests());
-exports.coverage         = series(parallel(cleanCoverage, lintTest, build), () => runTests(true));
-exports['coverage-only'] = series(parallel(cleanCoverage, lintTest),        () => runTests(true));
+exports.test             = series(parallel(lintTest, build),                function test() { return runTests(); });
+exports['test-only']     = series(lintTest,                                 function test() { return runTests(); });
+exports.coverage         = series(parallel(cleanCoverage, lintTest, build), function test() { return runTests(true); });
+exports['coverage-only'] = series(parallel(cleanCoverage, lintTest),        function test() { return runTests(true); });
