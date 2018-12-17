@@ -26,12 +26,12 @@
   "dependencies": {
     "bryt": "^1.0.0",
     "chalk": "^2.4.1",
-    "nanobuffer": "^1.1.3",
+    "nanobuffer": "^1.1.4",
     "source-map-support": "^0.5.9",
     "supports-color": "^5.5.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.2.0",
+    "@babel/core": "^7.2.2",
     "@babel/plugin-transform-modules-commonjs": "^7.2.0",
     "@babel/register": "^7.0.0",
     "ansi-colors": "^3.2.3",
@@ -46,6 +46,7 @@
     "eslint": "^5.10.0",
     "eslint-plugin-chai-expect": "^2.0.1",
     "eslint-plugin-mocha": "^5.2.0",
+    "eslint-plugin-promise": "^4.0.1",
     "eslint-plugin-security": "^1.4.0",
     "fancy-log": "^1.3.3",
     "fs-extra": "^7.0.1",
