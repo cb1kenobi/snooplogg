@@ -313,7 +313,7 @@ class SnoopLogg extends Logger {
 			this._defaultTheme = opts.theme;
 		}
 
-		if (opts.hasOwnProperty('maxBufferSize')) {
+		if (Object.prototype.hasOwnProperty.call(opts, 'maxBufferSize')) {
 			try {
 				this._buffer.maxSize = opts.maxBufferSize;
 			} catch (e) {

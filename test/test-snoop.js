@@ -567,8 +567,6 @@ describe('SnoopLogg', () => {
 			expect(emitCount).to.equal(2);
 
 			expect(streamCount).to.equal(0);
-		} catch (e) {
-			throw e;
 		} finally {
 			process.removeListener('snooplogg', onsnoop);
 		}
@@ -723,8 +721,6 @@ describe('SnoopLogg', () => {
 		try {
 			createInstanceWithDefaults()
 				.log('test!');
-		} catch (e) {
-			throw e;
 		} finally {
 			instance.unsnoop();
 		}
@@ -747,8 +743,6 @@ describe('SnoopLogg', () => {
 		try {
 			createInstanceWithDefaults()
 				.log('test!');
-		} catch (e) {
-			throw e;
 		} finally {
 			instance.unsnoop();
 		}
@@ -859,8 +853,6 @@ describe('SnoopLogg', () => {
 
 		try {
 			log('test!');
-		} catch (e) {
-			throw e;
 		} finally {
 			instance.unsnoop();
 		}
