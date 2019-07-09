@@ -5,7 +5,6 @@ if (!Error.prepareStackTrace) {
 
 import bryt from 'bryt';
 import chalk from 'chalk';
-import fs from 'fs';
 import NanoBuffer from 'nanobuffer';
 import supportsColor from 'supports-color';
 import util from 'util';
@@ -30,50 +29,56 @@ class Logger extends Function {
 	 * @access public
 	 */
 	constructor(namespace, parent = null, root = null, style = null) {
-		const ns = (parent && parent._ns || []).concat(namespace);
+		const ns = !namespace ? [] : (parent && parent._ns || []).concat(namespace);
 
-		return Object.defineProperties(
-			Object.setPrototypeOf(
-				function createNamespace(namespace, style) {
-					return new Logger(namespace, createNamespace, root, style);
-				},
-				Logger.prototype
-			), {
-				/**
-				 * The actual log namespace used for filtering. Namespaces are
-				 * separated by a colon (:).
-				 * @type {String}
-				 */
-				_namespace: { writable: true, value: ns.join(':') },
-
-				/**
-				 * The style for the namespace. This value is either manually
-				 * specified or automatically chosen.
-				 * @type {String}
-				 */
-				_namespaceStyle: { value: style },
-
-				/**
-				 * An array of namespaces to make it easier when constructing a
-				 * new namespace's name.
-				 * @type {Array.<String>}
-				 */
-				_ns: { writable: true, value: ns },
-
-				/**
-				 * A reference to the parent logger. Used to construct the
-				 * namespace.
-				 * @type {?Logger}
-				 */
-				_parent: { writable: true, value: parent },
-
-				/**
-				 * A reference to the top-level SnoopLogg instance.
-				 * @type {?SnoopLogg}
-				 */
-				_root: { value: root }
-			}
+		const inst = Object.setPrototypeOf(
+			function createNamespace(namespace, style) {
+				return inst._namespaces[namespace] || (inst._namespaces[namespace] = new Logger(namespace, createNamespace, root, style));
+			},
+			Logger.prototype
 		);
+
+		return Object.defineProperties(inst, {
+			/**
+			 * The actual log namespace used for filtering. Namespaces are
+			 * separated by a colon (:).
+			 * @type {String}
+			 */
+			_namespace: { writable: true, value: ns.join(':') },
+
+			/**
+			 * A map of namespaces under this logger.
+			 * @type {Object}
+			 */
+			_namespaces: { value: {} },
+
+			/**
+			 * The style for the namespace. This value is either manually
+			 * specified or automatically chosen.
+			 * @type {String}
+			 */
+			_namespaceStyle: { value: style },
+
+			/**
+			 * An array of namespaces to make it easier when constructing a
+			 * new namespace's name.
+			 * @type {Array.<String>}
+			 */
+			_ns: { writable: true, value: ns },
+
+			/**
+			 * A reference to the parent logger. Used to construct the
+			 * namespace.
+			 * @type {?Logger}
+			 */
+			_parent: { writable: true, value: parent },
+
+			/**
+			 * A reference to the top-level SnoopLogg instance.
+			 * @type {?SnoopLogg}
+			 */
+			_root: { value: root }
+		});
 	}
 
 	/**
@@ -106,127 +111,135 @@ class SnoopLogg extends Logger {
 	 * @access public
 	 */
 	constructor() {
-		return Object.defineProperties(
-			Object.setPrototypeOf(
-				function createNamespace(namespace) {
-					return new Logger(namespace, createNamespace, createNamespace);
-				},
-				SnoopLogg.prototype
-			), {
-				/**
-				 * A regex pattern of namespaces to match or the string `*` to
-				 * allow all namespaces.
-				 * @type {RegExp|String|null}
-				 */
-				_allow:  { writable: true, value: null },
-
-				/**
-				 * A cache of hashes to auto-selected colors.
-				 * @type {Object}
-				 */
-				_autoCache: { writable: true, value: {} },
-
-				/**
-				 * The log message buffer.
-				 * @type {Array.<Object>}
-				 */
-				_buffer: { writable: true, value: new NanoBuffer(process.env.SNOOPLOGG_MAX_BUFFER_SIZE !== undefined ? Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BUFFER_SIZE)) : 0) },
-
-				/**
-				 * An array of available colors to choose from when rendering
-				 * auto-styled labels such as the namespace.
-				 * @type {Array.<String>}
-				 */
-				_colors: { writable: true, value: process.env.SNOOPLOGG_COLOR_LIST ? process.env.SNOOPLOGG_COLOR_LIST.split(',') : [] },
-
-				/**
-				 * The default theme to apply if a stream didn't specify one.
-				 * @type {String}
-				 */
-				_defaultTheme: { writable: true, value: process.env.SNOOPLOGG_DEFAULT_THEME || 'standard' },
-
-				/**
-				 * A lazy unique identifier for this `SnoopLogg` instance. This
-				 * is used to prevent this instance from processing it's own
-				 * messages.
-				 * @type {Number}
-				 */
-				_id: { value: Math.round(Math.random() * 1e9) },
-
-				/**
-				 * A regex pattern of namespaces to ignore.
-				 * @type {RegExp|null}
-				 */
-				_ignore: { writable: true, value: null },
-
-				/**
-				 * Options that are passed into `util.inspect()` to stringify objects. If set to
-				 * `null`, then the value is stringified using Node's `util.format()`.
-				 * @type {Object}
-				 */
-				_inspectOptions: {
-					writable: true,
-					value: {
-						breakLength: 0,
-						colors: true,
-						depth: 4,
-						showHidden: false
-					}
-				},
-
-				/**
-				 * The minumum brightness when auto-selecting a color. Defaults to `80`.
-				 * @type {Number}
-				 */
-				_minBrightness: { writable: true, value: process.env.SNOOPLOGG_MIN_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MIN_BRIGHTNESS))) : 80 },
-
-				/**
-				 * A list of middlewares to call and process log messages prior
-				 * to dispatching.
-				 * @type {Array.<Function>}
-				 */
-				_middlewares: { value: [] },
-
-				/**
-				 * The maximum brightness when auto-selecting a color. Defaults to `210`.
-				 * @type {Number}
-				 */
-				_maxBrightness: { writable: true, value: process.env.SNOOPLOGG_MAX_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BRIGHTNESS))) : 210 },
-
-				/**
-				 * A list of objects containing the stream and theme name.
-				 * @type {Array.<Object>}
-				 */
-				_streams: { value: [] },
-
-				/**
-				 * A map of style names and their functions.
-				 * @type {Object}
-				 */
-				styles: { enumerable: true, value: {} },
-
-				/**
-				 * A list of themes and the function to apply them.
-				 * @type {Object.<String,Function>}
-				 */
-				_themes: { value: {} },
-
-				/**
-				 * A map of all registered log types.
-				 * @type {Object.<String, Number>}
-				 */
-				_types: { value: {} },
-
-				/**
-				 * Re-export of the `chalk` library.
-				 * @type {Object}
-				 */
-				chalk: {
-					enumerable: true,
-					value: chalk
-				}
-			}
+		const inst = Object.setPrototypeOf(
+			function createNamespace(namespace) {
+				return inst._namespaces[namespace] || (inst._namespaces[namespace] = new Logger(namespace, createNamespace, createNamespace));
+			},
+			SnoopLogg.prototype
 		);
+
+		Object.defineProperties(inst, {
+			/**
+			 * A regex pattern of namespaces to match or the string `*` to
+			 * allow all namespaces.
+			 * @type {RegExp|String|null}
+			 */
+			_allow:  { writable: true, value: null },
+
+			/**
+			 * A cache of hashes to auto-selected colors.
+			 * @type {Object}
+			 */
+			_autoCache: { writable: true, value: {} },
+
+			/**
+			 * The log message buffer.
+			 * @type {Array.<Object>}
+			 */
+			_buffer: { writable: true, value: new NanoBuffer(process.env.SNOOPLOGG_MAX_BUFFER_SIZE !== undefined ? Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BUFFER_SIZE)) : 0) },
+
+			/**
+			 * An array of available colors to choose from when rendering
+			 * auto-styled labels such as the namespace.
+			 * @type {Array.<String>}
+			 */
+			_colors: { writable: true, value: process.env.SNOOPLOGG_COLOR_LIST ? process.env.SNOOPLOGG_COLOR_LIST.split(',') : [] },
+
+			/**
+			 * The default theme to apply if a stream didn't specify one.
+			 * @type {String}
+			 */
+			_defaultTheme: { writable: true, value: process.env.SNOOPLOGG_DEFAULT_THEME || 'standard' },
+
+			/**
+			 * A lazy unique identifier for this `SnoopLogg` instance. This
+			 * is used to prevent this instance from processing it's own
+			 * messages.
+			 * @type {Number}
+			 */
+			_id: { value: Math.round(Math.random() * 1e9) },
+
+			/**
+			 * A regex pattern of namespaces to ignore.
+			 * @type {RegExp|null}
+			 */
+			_ignore: { writable: true, value: null },
+
+			/**
+			 * Options that are passed into `util.inspect()` to stringify objects. If set to
+			 * `null`, then the value is stringified using Node's `util.format()`.
+			 * @type {Object}
+			 */
+			_inspectOptions: {
+				writable: true,
+				value: {
+					breakLength: 0,
+					colors: true,
+					depth: 4,
+					showHidden: false
+				}
+			},
+
+			/**
+			 * The minumum brightness when auto-selecting a color. Defaults to `80`.
+			 * @type {Number}
+			 */
+			_minBrightness: { writable: true, value: process.env.SNOOPLOGG_MIN_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MIN_BRIGHTNESS))) : 80 },
+
+			/**
+			 * A list of middlewares to call and process log messages prior
+			 * to dispatching.
+			 * @type {Array.<Function>}
+			 */
+			_middlewares: { value: [] },
+
+			/**
+			 * The maximum brightness when auto-selecting a color. Defaults to `210`.
+			 * @type {Number}
+			 */
+			_maxBrightness: { writable: true, value: process.env.SNOOPLOGG_MAX_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BRIGHTNESS))) : 210 },
+
+			/**
+			 * A map of namespaces under this logger.
+			 * @type {Object}
+			 */
+			_namespaces: { value: {} },
+
+			/**
+			 * A list of objects containing the stream and theme name.
+			 * @type {Array.<Object>}
+			 */
+			_streams: { value: [] },
+
+			/**
+			 * A map of style names and their functions.
+			 * @type {Object}
+			 */
+			styles: { enumerable: true, value: {} },
+
+			/**
+			 * A list of themes and the function to apply them.
+			 * @type {Object.<String,Function>}
+			 */
+			_themes: { value: {} },
+
+			/**
+			 * A map of all registered log types.
+			 * @type {Object.<String, Number>}
+			 */
+			_types: { value: {} },
+
+			/**
+			 * Re-export of the `chalk` library.
+			 * @type {Object}
+			 */
+			chalk: {
+				enumerable: true,
+				value: chalk
+			}
+		});
+
+		return inst;
 	}
 
 	/**
@@ -238,7 +251,7 @@ class SnoopLogg extends Logger {
 	 * @access public
 	 */
 	ns(namespace) {
-		return new Logger(namespace, this, this._root || this);
+		return this._namespaces[namespace] || (this._namespaces[namespace] = new Logger(namespace, this, this._root || this));
 	}
 
 	/**

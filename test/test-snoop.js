@@ -292,6 +292,17 @@ describe('SnoopLogg', () => {
 		expect(barLogger.namespace).to.equal('foo:bar');
 	});
 
+	it('should cache namespace loggers', () => {
+		const instance = createInstanceWithDefaults();
+
+		const fooLogger = instance('foo');
+		expect(fooLogger).to.equal(instance('foo'));
+		expect(fooLogger).to.equal(instance.ns('foo'));
+
+		const barLogger = fooLogger('bar');
+		expect(barLogger).to.equal(fooLogger('bar'));
+	});
+
 	it('should throw error when trying to enable bad patterns', () => {
 		const instance = createInstanceWithDefaults();
 
