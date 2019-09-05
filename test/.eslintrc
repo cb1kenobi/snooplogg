@@ -13,6 +13,7 @@
         "sinon": false
     },
     "rules": {
+        "no-regex-spaces": 0,
         "no-unused-vars": 0,
         "no-debugger": 0
     }
