@@ -1,7 +1,4 @@
-/* istanbul ignore if */
-if (!Error.prepareStackTrace) {
-	require('source-map-support/register');
-}
+import 'source-map-support/register';
 
 import bryt from 'bryt';
 import chalk from 'chalk';
@@ -9,6 +6,7 @@ import NanoBuffer from 'nanobuffer';
 import supportsColor from 'supports-color';
 import util from 'util';
 
+import { Console } from 'console';
 import { Transform, Writable } from 'stream';
 
 /**
@@ -255,8 +253,48 @@ class SnoopLogg extends Logger {
 	}
 
 	/**
-	 * Enables all namespaces effectively allowing all logging to be written to
-	 * stdout/stderr.
+	 * Creates a `console` object that is wired up to this snooplogg instance.
+	 *
+	 * @returns {Console}
+	 * @access public
+	 */
+	get console() {
+		if (!this._console) {
+			const inst = this._root || this;
+			const _this = this;
+
+			class StdioDispatch extends Writable {
+				constructor(type, fd) {
+					super();
+					this.type = type;
+					this.fd = fd;
+				}
+
+				_write(data) {
+					inst.dispatch({
+						id:      inst._id,
+						args:    [ data.toString() ],
+						type:    this.type,
+						fd:      this.fd,
+						ns:      _this._namespace,
+						nsStyle: _this._namespaceStyle,
+						ts:      new Date,
+						enabled: _this.enabled
+					});
+				}
+			}
+
+			this._console = new Console({
+				stderr: new StdioDispatch('error', 2),
+				stdout: new StdioDispatch('log', 1)
+			});
+		}
+
+		return this._console;
+	}
+
+	/**
+	 * Enables all namespaces effectively allowing all logging to be written to stdout/stderr.
 	 *
 	 * @returns {SnoopLogg}
 	 * @access public
@@ -800,13 +838,16 @@ class StdioStream extends Writable {
 		opts.objectMode = true;
 		super(opts);
 
+		const stdout = opts.stdout || process.stdout;
+		const stderr = opts.stderr || process.stderr;
+
 		/* istanbul ignore else */
 		if (supportsColor) {
-			this.stdout = process.stdout;
-			this.stderr = process.stderr;
+			this.stdout = stdout;
+			this.stderr = stderr;
 		} else {
-			(this.stdout = new StripColors).pipe(process.stdout);
-			(this.stderr = new StripColors).pipe(process.stderr);
+			(this.stdout = new StripColors).pipe(stdout);
+			(this.stderr = new StripColors).pipe(stderr);
 		}
 	}
 
@@ -961,8 +1002,13 @@ let instance = createInstanceWithDefaults()
 
 // bind all methods to the main instance
 for (const i of Object.getOwnPropertyNames(SnoopLogg.prototype)) {
-	if (typeof SnoopLogg.prototype[i] === 'function') {
-		instance[i] = instance[i].bind(instance);
+	const desc = Object.getOwnPropertyDescriptor(SnoopLogg.prototype, i);
+	if (desc && typeof desc.get === 'function') {
+		desc.get = desc.get.bind(instance);
+		Object.defineProperty(instance, i, desc);
+	} else if (desc && typeof desc.value === 'function') {
+		desc.value = desc.value.bind(instance);
+		Object.defineProperty(instance, i, desc);
 	}
 }
 
