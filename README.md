@@ -158,6 +158,14 @@ log.jin('parents ain\'t home');
 log.juice('too much drama', true);
 ```
 
+Console:
+
+```js
+import snooplogg from 'snooplogg';
+
+snooplogg.enable('*').console.log('dawg gone');
+```
+
 ### API
 
 #### `snooplogg()`
