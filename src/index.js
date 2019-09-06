@@ -42,7 +42,7 @@ class Logger extends Functionator {
 			while (proto && proto.constructor.name !== 'Logger') {
 				proto = proto.__proto__;
 			}
-			return this._namespaces[namespace] || (this._namespaces[namespace] = Object.setPrototypeOf(new Logger(namespace, this, this._root, style), proto));
+			return this._namespaces[namespace] || (this._namespaces[namespace] = bind(Object.setPrototypeOf(new Logger(namespace, this, this._root, style), proto)));
 		});
 
 		Object.defineProperties(this, {
@@ -152,8 +152,6 @@ class SnoopLogg extends Logger {
 		}
 
 		super();
-
-		this.__proto__.__proto__ = Object.create(Logger.prototype);
 
 		Object.defineProperties(this, {
 			/**
@@ -273,6 +271,9 @@ class SnoopLogg extends Logger {
 				value: chalk
 			}
 		});
+
+		// swap out the Logger prototype for a copy that `type()` will modify
+		this.__proto__.__proto__ = Object.defineProperty(Object.create(Logger.prototype), '__id', { value: this._id });
 
 		if (opts) {
 			this.config(opts);
@@ -878,12 +879,45 @@ class StdioDispatcher extends Writable {
 }
 
 /**
+ * Loops over an `SnoopLogg` or `Logger` instance's prototype chain up to the `Functionator`
+ * prototype while binding the prototype functions directly to the instance object so that
+ * the method's context isn't lost if the log functions aren't destructured.
+ *
+ * @param {Object} obj - The object instance to bind methods to.
+ * @returns {Object} The original object.
+ */
+function bind(obj) {
+	for (let proto = obj.__proto__; proto; proto = proto.__proto__) {
+		for (const prop of Object.getOwnPropertyNames(proto)) {
+			let desc = Object.getOwnPropertyDescriptor(proto, prop);
+
+			if (prop === 'constructor' || !desc) {
+				continue;
+			} else if (typeof desc.get === 'function') {
+				desc.get = desc.get.bind(obj);
+			} else if (typeof desc.value === 'function') {
+				desc.value = desc.value.bind(obj);
+			} else {
+				continue;
+			}
+
+			Object.defineProperty(obj, prop, desc);
+		}
+
+		if (proto.constructor.name === 'Functionator') {
+			break;
+		}
+	}
+	return obj;
+}
+
+/**
  * Creates a snooplogg instance with a bunch of defaults.
  *
  * @returns {SnoopLogg}
  */
 function createInstanceWithDefaults() {
-	return new SnoopLogg()
+	return bind(new SnoopLogg()
 		.type('log',   { style: 'gray', label: null })
 		.type('trace', {
 			style: 'gray',
@@ -1003,26 +1037,16 @@ function createInstanceWithDefaults() {
 		.theme('minimal', function (msg) {
 			const args = this._inspectOptions ? msg.args.map(it => isJSON(it) ? util.inspect(it, this._inspectOptions) : it) : msg.args;
 			return `${util.format.apply(null, args)}\n`;
-		});
+		})
+	);
 }
 
-// create the global instance and wire up the built-in types
-let instance = createInstanceWithDefaults()
-	.enable(process.env.SNOOPLOGG || process.env.DEBUG)
-	.pipe(new StdioStream, { flush: true });
-
-// bind all methods to the main instance
-for (const i of Object.getOwnPropertyNames(SnoopLogg.prototype)) {
-	const desc = Object.getOwnPropertyDescriptor(SnoopLogg.prototype, i);
-	if (desc && typeof desc.get === 'function') {
-		desc.get = desc.get.bind(instance);
-		Object.defineProperty(instance, i, desc);
-	} else if (desc && typeof desc.value === 'function') {
-		desc.value = desc.value.bind(instance);
-		Object.defineProperty(instance, i, desc);
-	}
-}
-
+/**
+ * Checks if a variable is a JSON compatible object.
+ *
+ * @param {*} it - The value to check.
+ * @returns {Boolean}
+ */
 function isJSON(it) {
 	if (it === null || typeof it !== 'object') {
 		return false;
@@ -1030,6 +1054,11 @@ function isJSON(it) {
 	const proto = Object.getPrototypeOf(it);
 	return proto && proto.constructor && proto.constructor.name === 'Object';
 }
+
+// create the global instance and wire up the built-in types
+const instance = createInstanceWithDefaults()
+	.enable(process.env.SNOOPLOGG || process.env.DEBUG)
+	.pipe(new StdioStream, { flush: true });
 
 export default instance;
 

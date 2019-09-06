@@ -1113,4 +1113,14 @@ describe('SnoopLogg', () => {
 		const c = createInstanceWithDefaults()('foo').console;
 		expect(c).to.be.instanceof(Console);
 	});
+
+	it('should allow log functions to be destructured', () => {
+		const { log } = snooplogg;
+		log('foo!');
+	});
+
+	it('should allow namespaced log functions to be destructured', () => {
+		const { log } = snooplogg('foo');
+		log('bar!');
+	});
 });
