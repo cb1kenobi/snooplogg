@@ -93,10 +93,10 @@ class Logger extends Functionator {
 	 */
 	get console() {
 		if (!this._console) {
-			this._console = new Console({
-				stderr: this.createStream({ type: 'error', fd: 2 }),
-				stdout: this.createStream({ type: 'log', fd: 1 })
-			});
+			this._console = new Console(
+				this.createStream({ type: 'error', fd: 2 }),
+				this.createStream({ type: 'log', fd: 1 })
+			);
 		}
 
 		return this._console;
