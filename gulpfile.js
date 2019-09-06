@@ -26,23 +26,25 @@ exports.clean = parallel(cleanCoverage, cleanDist, cleanDocs);
 /*
  * lint tasks
  */
-async function lint(pattern) {
+function lint(pattern) {
 	return gulp.src(pattern)
-		.pipe($.plumber())
 		.pipe($.eslint())
 		.pipe($.eslint.format())
 		.pipe($.eslint.failAfterError());
 }
-async function lintSrc() { return lint('src/**/*.js'); }
-async function lintTest() { return lint('test/**/test-*.js'); }
+function lintSrc() { return lint('src/**/*.js'); }
+function lintTest() { return lint('test/**/test-*.js'); }
 exports['lint-src'] = lintSrc;
 exports['lint-test'] = lintTest;
-exports.lint = parallel(lintSrc, lintTest);
+exports.lint = parallel(
+	async function lintSrcWrapper() { return lintSrc(); },
+	async function lintTestWrapper() { return lintTest(); }
+);
 
 /*
  * build tasks
  */
-function build() {
+const build = series(cleanDist, lintSrc, function buildWrapper() {
 	return gulp
 		.src('src/**/*.js')
 		.pipe($.plumber())
@@ -53,9 +55,8 @@ function build() {
 		}))
 		.pipe($.sourcemaps.write())
 		.pipe(gulp.dest(distDir));
-}
-exports.build = series(parallel(cleanDist, lintSrc), build);
-exports.default = exports.build;
+});
+exports.build = exports.default = build;
 
 exports.docs = series(parallel(cleanDocs, lintSrc), async () => {
 	const esdoc = require('esdoc').default;
@@ -89,7 +90,7 @@ exports.docs = series(parallel(cleanDocs, lintSrc), async () => {
 /*
  * test tasks
  */
-async function runTests(cover) {
+function runTests(cover) {
 	const args = [];
 	let { execPath } = process;
 
@@ -184,7 +185,9 @@ function resolveModule(name) {
 	}
 }
 
-exports.test             = series(parallel(lintTest, build),                function test() { return runTests(); });
-exports['test-only']     = series(lintTest,                                 function test() { return runTests(); });
-exports.coverage         = series(parallel(cleanCoverage, lintTest, build), function test() { return runTests(true); });
-exports['coverage-only'] = series(parallel(cleanCoverage, lintTest),        function test() { return runTests(true); });
+exports.test             = series(lintTest, build,                async function test() { return runTests(); });
+exports['test-only']     = series(lintTest,                       async function test() { return runTests(); });
+exports.coverage         = series(cleanCoverage, lintTest, build, async function test() { return runTests(true); });
+exports['coverage-only'] = series(cleanCoverage, lintTest,        async function test() { return runTests(true); });
+
+process.on('uncaughtException', () => {});

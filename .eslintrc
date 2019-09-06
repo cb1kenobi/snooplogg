@@ -27,6 +27,7 @@
         "chai-expect/missing-assertion": "error",
         "chai-expect/terminating-properties": "warn",
         "curly": [ "error", "all" ],
+        "no-debugger": [ "warn" ],
         "eol-last": "error",
         "indent": [ "error", "tab", { "SwitchCase": 1 } ],
         "keyword-spacing": [ "error" ],

@@ -2,33 +2,14 @@ import snooplogg from '../dist/index';
 import util from 'util';
 
 import {
-	config,
 	createInstanceWithDefaults,
-	debug,
-	enable,
-	error,
-	fatal,
 	Format,
-	info,
-	log,
-	Logger,
-	pipe,
-	snoop,
 	SnoopLogg,
-	StripColors,
-	style,
-	theme,
-	trace,
-	type,
-	unpipe,
-	unsnoop,
-	use,
-	warn
+	StripColors
 } from '../dist/index';
 
+import { Console } from 'console';
 import { Transform, Writable } from 'stream';
-
-import * as local from '../dist/index';
 
 describe('SnoopLogg', () => {
 	before(() => {
@@ -38,6 +19,16 @@ describe('SnoopLogg', () => {
 
 	it('should be instance of SnoopLogg', () => {
 		expect(snooplogg).to.be.a('function');
+	});
+
+	it('should error if SnoopLogg options are invalid', () => {
+		expect(() => {
+			new SnoopLogg('foo');
+		}).to.throw(TypeError, 'Expected options to be an object');
+
+		expect(() => {
+			new SnoopLogg(null);
+		}).to.throw(TypeError, 'Expected options to be an object');
 	});
 
 	it('should update config', () => {
@@ -674,6 +665,7 @@ describe('SnoopLogg', () => {
 			.enable('*');
 
 		expect(instance._buffer.size).to.equal(0);
+		expect(instance._buffer.maxSize).to.equal(10);
 
 		let i = 1;
 
@@ -1110,5 +1102,15 @@ describe('SnoopLogg', () => {
 				baz: 123,
 				undef: undefined
 			});
+	});
+
+	it('should return a console instance for the top-level instance', () => {
+		const c = createInstanceWithDefaults().console;
+		expect(c).to.be.instanceof(Console);
+	});
+
+	it('should return a console instance for the namespace logger', () => {
+		const c = createInstanceWithDefaults()('foo').console;
+		expect(c).to.be.instanceof(Console);
 	});
 });

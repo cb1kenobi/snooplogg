@@ -10,36 +10,44 @@ import { Console } from 'console';
 import { Transform, Writable } from 'stream';
 
 /**
- * Contains a namespaced logger. The actual log functions are defined on the
- * Logger's prototype.
+ * The secret sauce.
+ */
+class Functionator extends Function {
+	constructor(fn) {
+		return Object.setPrototypeOf(fn, new.target.prototype);
+	}
+}
+
+/**
+ * Contains a namespaced logger. The actual log functions are defined on the Logger's prototype.
  *
  * Note that this is for internal use only and should not used publicly.
  */
-class Logger extends Function {
+class Logger extends Functionator {
 	/**
 	 * Constructs a new logger instance.
 	 *
 	 * @param {?String} [namespace] - The name for this logger instance.
 	 * @param {?Logger} [parent] - The parent logger.
 	 * @param {?SnoopLogg} [root] - A reference to the top-level SnoopLogg instance.
-	 * @param {?String} [style] - The style for this namespace. Ultimately it's
-	 * up to the theme as to how the namespace is styled.
+	 * @param {?String} [style] - The style for this namespace. Ultimately it's up to the theme as
+	 * to how the namespace is styled.
 	 * @access public
 	 */
 	constructor(namespace, parent = null, root = null, style = null) {
 		const ns = !namespace ? [] : (parent && parent._ns || []).concat(namespace);
 
-		const inst = Object.setPrototypeOf(
-			function createNamespace(namespace, style) {
-				return inst._namespaces[namespace] || (inst._namespaces[namespace] = new Logger(namespace, createNamespace, root, style));
-			},
-			Logger.prototype
-		);
+		super(namespace => {
+			let proto = this.__proto__;
+			while (proto && proto.constructor.name !== 'Logger') {
+				proto = proto.__proto__;
+			}
+			return this._namespaces[namespace] || (this._namespaces[namespace] = Object.setPrototypeOf(new Logger(namespace, this, this._root, style), proto));
+		});
 
-		return Object.defineProperties(inst, {
+		Object.defineProperties(this, {
 			/**
-			 * The actual log namespace used for filtering. Namespaces are
-			 * separated by a colon (:).
+			 * The actual log namespace used for filtering. Namespaces are separated by a colon (:).
 			 * @type {String}
 			 */
 			_namespace: { writable: true, value: ns.join(':') },
@@ -51,22 +59,20 @@ class Logger extends Function {
 			_namespaces: { value: {} },
 
 			/**
-			 * The style for the namespace. This value is either manually
-			 * specified or automatically chosen.
+			 * The style for the namespace. This value is either manually specified or automatically
+			 * chosen.
 			 * @type {String}
 			 */
 			_namespaceStyle: { value: style },
 
 			/**
-			 * An array of namespaces to make it easier when constructing a
-			 * new namespace's name.
+			 * An array of namespaces to make it easier when constructing a new namespace's name.
 			 * @type {Array.<String>}
 			 */
 			_ns: { writable: true, value: ns },
 
 			/**
-			 * A reference to the parent logger. Used to construct the
-			 * namespace.
+			 * A reference to the parent logger. Used to construct the namespace.
 			 * @type {?Logger}
 			 */
 			_parent: { writable: true, value: parent },
@@ -75,22 +81,53 @@ class Logger extends Function {
 			 * A reference to the top-level SnoopLogg instance.
 			 * @type {?SnoopLogg}
 			 */
-			_root: { value: root }
+			_root: { value: root || this }
 		});
 	}
 
 	/**
-	 * Determines if this logger is enabled based on the pattern set by
-	 * `enabled()`.
+	 * Creates a `console` object that is wired up to this snooplogg instance.
+	 *
+	 * @type {Console}
+	 * @access public
+	 */
+	get console() {
+		if (!this._console) {
+			this._console = new Console({
+				stderr: this.createStream({ type: 'error', fd: 2 }),
+				stdout: this.createStream({ type: 'log', fd: 1 })
+			});
+		}
+
+		return this._console;
+	}
+
+	/**
+	 * Creates a writable stream that when written to will write to this logger.
+	 *
+	 * @param {Object} [opts] - Various options.
+	 * @param {Number} [opts.fd] - The file descriptor to pass along with the log message.
+	 * @param {String} [opts.type] - The name of the type of messages being logged to this stream.
+	 * @returns {Writable}
+	 * @access public
+	 */
+	createStream({ fd, type } = {}) {
+		return new StdioDispatcher(this, { type, fd, ns: this._namespace, nsStyle: this._namespaceStyle, enabled: this.enabled });
+	}
+
+	/**
+	 * Determines if this logger is enabled based on the pattern set by SnoopLogg's `enable()`.
 	 * @type {Boolean}
+	 * @access public
 	 */
 	get enabled() {
-		return (this._root || this).isEnabled(this._namespace);
+		return this._root.isEnabled(this._namespace);
 	}
 
 	/**
 	 * The fully resolved namespace including parent namespaces.
 	 * @type {?String}
+	 * @access public
 	 */
 	get namespace() {
 		return this._namespace || null;
@@ -98,28 +135,29 @@ class Logger extends Function {
 }
 
 /**
- * Defines the global logger instance which added additional public APIs for
- * configuration and features.
+ * Defines the global logger instance which added additional public APIs for configuration and
+ * features.
  */
 class SnoopLogg extends Logger {
 	/**
-	 * Generates a namespaced logger class with the `SnoopLogg` prototype and
-	 * initializes its properties.
+	 * Generates a namespaced logger class with the `SnoopLogg` prototype and initializes its
+	 * properties.
 	 *
+	 * @param {Object} [opts] - Various config options.
 	 * @access public
 	 */
-	constructor() {
-		const inst = Object.setPrototypeOf(
-			function createNamespace(namespace) {
-				return inst._namespaces[namespace] || (inst._namespaces[namespace] = new Logger(namespace, createNamespace, createNamespace));
-			},
-			SnoopLogg.prototype
-		);
+	constructor(opts) {
+		if (opts !== undefined && (!opts || typeof opts !== 'object')) {
+			throw new TypeError('Expected options to be an object');
+		}
 
-		Object.defineProperties(inst, {
+		super();
+
+		this.__proto__.__proto__ = Object.create(Logger.prototype);
+
+		Object.defineProperties(this, {
 			/**
-			 * A regex pattern of namespaces to match or the string `*` to
-			 * allow all namespaces.
+			 * A regex pattern of namespaces to match or the string `*` to allow all namespaces.
 			 * @type {RegExp|String|null}
 			 */
 			_allow:  { writable: true, value: null },
@@ -137,8 +175,8 @@ class SnoopLogg extends Logger {
 			_buffer: { writable: true, value: new NanoBuffer(process.env.SNOOPLOGG_MAX_BUFFER_SIZE !== undefined ? Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BUFFER_SIZE)) : 0) },
 
 			/**
-			 * An array of available colors to choose from when rendering
-			 * auto-styled labels such as the namespace.
+			 * An array of available colors to choose from when rendering auto-styled labels such
+			 * as the namespace.
 			 * @type {Array.<String>}
 			 */
 			_colors: { writable: true, value: process.env.SNOOPLOGG_COLOR_LIST ? process.env.SNOOPLOGG_COLOR_LIST.split(',') : [] },
@@ -150,9 +188,8 @@ class SnoopLogg extends Logger {
 			_defaultTheme: { writable: true, value: process.env.SNOOPLOGG_DEFAULT_THEME || 'standard' },
 
 			/**
-			 * A lazy unique identifier for this `SnoopLogg` instance. This
-			 * is used to prevent this instance from processing it's own
-			 * messages.
+			 * A lazy unique identifier for this `SnoopLogg` instance. This is used to prevent this
+			 * instance from processing it's own messages.
 			 * @type {Number}
 			 */
 			_id: { value: Math.round(Math.random() * 1e9) },
@@ -182,7 +219,10 @@ class SnoopLogg extends Logger {
 			 * The minumum brightness when auto-selecting a color. Defaults to `80`.
 			 * @type {Number}
 			 */
-			_minBrightness: { writable: true, value: process.env.SNOOPLOGG_MIN_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MIN_BRIGHTNESS))) : 80 },
+			_minBrightness: {
+				writable: true,
+				value: process.env.SNOOPLOGG_MIN_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MIN_BRIGHTNESS))) : 80
+			},
 
 			/**
 			 * A list of middlewares to call and process log messages prior
@@ -195,13 +235,10 @@ class SnoopLogg extends Logger {
 			 * The maximum brightness when auto-selecting a color. Defaults to `210`.
 			 * @type {Number}
 			 */
-			_maxBrightness: { writable: true, value: process.env.SNOOPLOGG_MAX_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BRIGHTNESS))) : 210 },
-
-			/**
-			 * A map of namespaces under this logger.
-			 * @type {Object}
-			 */
-			_namespaces: { value: {} },
+			_maxBrightness: {
+				writable: true,
+				value: process.env.SNOOPLOGG_MAX_BRIGHTNESS !== undefined ? Math.min(255, Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BRIGHTNESS))) : 210
+			},
 
 			/**
 			 * A list of objects containing the stream and theme name.
@@ -237,78 +274,32 @@ class SnoopLogg extends Logger {
 			}
 		});
 
-		return inst;
-	}
-
-	/**
-	 * Explicit way of creating a namespace. `snooplogg('foo")` and `snooplogg.ns('foo')` are
-	 * equivalent.
-	 *
-	 * @param {?String} [namespace] - The name for this logger instance.
-	 * @returns {Logger}
-	 * @access public
-	 */
-	ns(namespace) {
-		return this._namespaces[namespace] || (this._namespaces[namespace] = new Logger(namespace, this, this._root || this));
-	}
-
-	/**
-	 * Creates a `console` object that is wired up to this snooplogg instance.
-	 *
-	 * @returns {Console}
-	 * @access public
-	 */
-	get console() {
-		if (!this._console) {
-			const inst = this._root || this;
-			const _this = this;
-
-			class StdioDispatch extends Writable {
-				constructor(type, fd) {
-					super();
-					this.type = type;
-					this.fd = fd;
-				}
-
-				_write(data) {
-					inst.dispatch({
-						id:      inst._id,
-						args:    [ data.toString() ],
-						type:    this.type,
-						fd:      this.fd,
-						ns:      _this._namespace,
-						nsStyle: _this._namespaceStyle,
-						ts:      new Date,
-						enabled: _this.enabled
-					});
-				}
-			}
-
-			this._console = new Console({
-				stderr: new StdioDispatch('error', 2),
-				stdout: new StdioDispatch('log', 1)
-			});
+		if (opts) {
+			this.config(opts);
 		}
-
-		return this._console;
 	}
 
 	/**
-	 * Enables all namespaces effectively allowing all logging to be written to stdout/stderr.
+	 * Stylizes text.
 	 *
-	 * @returns {SnoopLogg}
-	 * @access public
+	 * @param {String} style - A comma-separated list of styles to apply.
+	 * @param {*} text - The string to stylize.
+	 * @returns {String}
+	 * @access private
 	 */
-	get stdio() {
-		return this.enable('*');
+	applyStyle(style, text) {
+		if (style && text) {
+			return style.split(',').reduce((text, style) => this.styles[style] ? this.styles[style](text) : text, String(text));
+		}
+		return text;
 	}
 
 	/**
 	 * Allows settings to be changed.
 	 *
 	 * @param {Object} [opts] - Various options.
-	 * @param {String|Array.<String>} [opts.colors] - An array or
-	 * comma-separated list of colors to choose from when auto-styling.
+	 * @param {String|Array.<String>} [opts.colors] - An array or comma-separated list of colors to
+	 * choose from when auto-styling.
 	 * @param {Object} [opts.inspectOptions] - Options to pass into `util.inspect()` when
 	 * stringifying objects. Set to `null` to stringify objects using Node's `util.format()`.
 	 * @param {Number} [opts.maxBufferSize] - The max buffer size.
@@ -382,12 +373,49 @@ class SnoopLogg extends Logger {
 	}
 
 	/**
+	 * Dispatches a message object through the middlewares, filters, and eventually to all output
+	 * streams.
+	 *
+	 * @param {Object} msg - A message object.
+	 * @param {Array} msg.args - An array of zero or more arguments that will be formatted into the
+	 * final log message.
+	 * @access public
+	 */
+	dispatch(msg) {
+		if (!msg || typeof msg !== 'object') {
+			return;
+		}
+
+		if (!Array.isArray(msg.args)) {
+			throw new TypeError('Expected args to be an array');
+		}
+
+		// run all middleware
+		for (const { fn } of this._middlewares) {
+			msg = fn(msg) || msg;
+		}
+
+		// add the message to the buffer
+		this._buffer.push(msg);
+
+		if ((msg.id === this._id && msg.enabled) || (msg.id !== this._id && this.isEnabled(msg.ns))) {
+			for (const s of this._streams) {
+				msg.formatter = this._themes[s.theme] || this._themes[this._defaultTheme];
+				s.stream.write(s.stream._writableState && s.stream._writableState.objectMode ? msg : format(msg));
+			}
+		}
+
+		if (msg.id === this._id) {
+			process.emit('snooplogg', msg);
+		}
+	}
+
+	/**
 	 * Enables log output for the given pattern.
 	 *
-	 * @param {String} [pattern] - A string with one or more comma-separated
-	 * namespaces to enable logging for. If the string is empty or null, then
-	 * all log output will be silenced. If the pattern is `*`, then all log
-	 * messages will be displayed.
+	 * @param {String} [pattern] - A string with one or more comma-separated namespaces to enable
+	 * logging for. If the string is empty or null, then all log output will be silenced. If the
+	 * pattern is `*`, then all log messages will be displayed.
 	 * @returns {SnoopLogg}
 	 * @access public
 	 */
@@ -435,177 +463,42 @@ class SnoopLogg extends Logger {
 	}
 
 	/**
-	 * Registers a new log type.
+	 * Determines if the specified namespace is enabled.
 	 *
-	 * @param {String} name - The log type name.
-	 * @param {Object} [opts] - Various options.
-	 * @param {String} [opts.style] - The color to associate with this type.
-	 * @param {String} [opts.label] - The label to display when print this type
-	 * of log message.
-	 * @param {Number} [opts.fd] - The file descriptor. Use `0` for stdout and
-	 * `1` for stderr.
-	 * @returns {SnoopLogg}
+	 * @param {?String} namespace - The namespace.
+	 * @returns {Boolean}
 	 * @access public
 	 */
-	type(name, opts = {}) {
-		if (!name || typeof name !== 'string') {
-			throw new TypeError('Expected name to be a non-empty string');
+	isEnabled(namespace) {
+		const allow = this._allow;
+		if (allow === null) {
+			// all logging is silenced
+			return false;
 		}
 
-		if (!opts || typeof opts !== 'object') {
-			throw new TypeError('Expected opts to be an object');
+		if (!namespace || allow === '*') {
+			// nothing to filter
+			return true;
 		}
 
-		const type = this._types[name] = {
-			type:      name,
-			typeStyle: opts.style,
-			typeLabel: opts.label !== undefined ? opts.label : name,
-			fd:        opts.fd || 0
-		};
-
-		if (!Object.getOwnPropertyDescriptor(Logger.prototype, name)) {
-			// wire up the actual log type function
-			// note: this has to use a getter so that `this` can be resolved at
-			// runtime because if you `import { info } from 'SnoopLogg'`, `info()`
-			// gets forced into the global context.
-			Object.defineProperty(Logger.prototype, name, {
-				configurable: true,
-				enumerable: true,
-				get: function () {
-					const value = (...args) => {
-						(this._root || this).dispatch({
-							id: (this._root || this)._id,
-							args: typeof opts.transform === 'function' ? opts.transform(args) : args,
-							...type,
-							ns: this._namespace,
-							nsStyle: this._namespaceStyle,
-							ts: new Date,
-							enabled: this.enabled
-						});
-						return this;
-					};
-					Object.defineProperty(this, name, {
-						configurable: true,
-						enumerable: true,
-						value
-					});
-					return value;
-				}
-			});
+		const ignore = this._ignore;
+		if (allow && allow.test(namespace) && (!ignore || !ignore.test(namespace))) {
+			return true;
 		}
 
-		return this;
+		return false;
 	}
 
 	/**
-	 * Registers a function that applies a theme to a message.
+	 * Explicit way of creating a namespace. `snooplogg('foo")` and `snooplogg.ns('foo')` are
+	 * equivalent.
 	 *
-	 * @param {String} name - The name of the theme.
-	 * @param {Function} fn - A function to call that applies the theme.
-	 * @returns {SnoopLogg}
+	 * @param {?String} [namespace] - The name for this logger instance.
+	 * @returns {Logger}
 	 * @access public
 	 */
-	theme(name, fn) {
-		if (!name || typeof name !== 'string') {
-			throw new TypeError('Expected name to be a string');
-		}
-
-		if (!fn || typeof fn !== 'function') {
-			throw new TypeError('Expected fn to be a function');
-		}
-
-		this._themes[name] = fn.bind(this);
-
-		return this;
-	}
-
-	/**
-	 * Registers a function that applies a style to a message.
-	 *
-	 * @param {String} name - The name of the style.
-	 * @param {Function} fn - A function to call that applies the style.
-	 * @returns {SnoopLogg}
-	 * @access public
-	 */
-	style(name, fn) {
-		if (!name || typeof name !== 'string') {
-			throw new TypeError('Expected name to be a string');
-		}
-
-		if (!fn || typeof fn !== 'function') {
-			throw new TypeError('Expected fn to be a function');
-		}
-
-		this.styles[name] = fn.bind(this);
-
-		return this;
-	}
-
-	/**
-	 * Adds a middleware function to the message dispatching system.
-	 *
-	 * @param {Function} middleware - A middleware function to add to the list.
-	 * @param {Number} [priority=0] - The middleware priority. Negative priority is run before
-	 * positive values.
-	 * @returns {SnoopLogg}
-	 * @access public
-	 */
-	use(middleware, priority = 0) {
-		if (typeof middleware !== 'function') {
-			throw new TypeError('Expected middleware to be a function');
-		}
-
-		if (typeof priority !== 'number') {
-			throw new TypeError('Expected priority to be a number');
-		}
-
-		this._middlewares.push({ fn: middleware, priority });
-		this._middlewares.sort((a, b) => b.priority - a.priority);
-
-		return this;
-	}
-
-	/**
-	 * Starts listenening for events from other SnoopLogg instances.
-	 *
-	 * @param {String} [nsPrefix] - An optional label to prepend to the namespace for log messages
-	 * from other SnoopLogg instances.
-	 * @returns {SnoopLogg}
-	 * @access public
-	 */
-	snoop(nsPrefix) {
-		if (nsPrefix && typeof nsPrefix !== 'string') {
-			throw new TypeError('Expected namespace prefix to be a string');
-		}
-
-		this.unsnoop();
-
-		this.onSnoopMessage = msg => {
-			if (msg.id !== this._id) {
-				if (nsPrefix) {
-					msg = Object.assign({}, msg);
-					msg.ns = nsPrefix + (msg.ns || '');
-				}
-				this.dispatch(msg);
-			}
-		};
-
-		process.on('snooplogg', this.onSnoopMessage);
-
-		return this;
-	}
-
-	/**
-	 * Stops listenening for events from other SnoopLogg instances.
-	 *
-	 * @returns {SnoopLogg}
-	 * @access public
-	 */
-	unsnoop() {
-		if (this.onSnoopMessage) {
-			process.removeListener('snooplogg', this.onSnoopMessage);
-		}
-		return this;
+	ns(namespace) {
+		return this._namespaces[namespace] || (this._namespaces[namespace] = Object.setPrototypeOf(new Logger(namespace, this, this), this.__proto__.__proto__));
 	}
 
 	/**
@@ -613,10 +506,9 @@ class SnoopLogg extends Logger {
 	 *
 	 * @param {stream.Writable} stream - The stream to pipe messages to.
 	 * @param {Object} [opts] - Various options.
-	 * @param {Boolean} [opts.flush=false] - When true, immediately flushes the
-	 * buffer of log messages to the stream.
-	 * @param {String} [opts.theme] - The theme to apply to all messages written
-	 * to this stream.
+	 * @param {Boolean} [opts.flush=false] - When true, immediately flushes the buffer of log
+	 * messages to the stream.
+	 * @param {String} [opts.theme] - The theme to apply to all messages written to this stream.
 	 * @returns {SnoopLogg}
 	 * @access public
 	 */
@@ -660,6 +552,144 @@ class SnoopLogg extends Logger {
 	}
 
 	/**
+	 * Starts listenening for events from other SnoopLogg instances.
+	 *
+	 * @param {String} [nsPrefix] - An optional label to prepend to the namespace for log messages
+	 * from other SnoopLogg instances.
+	 * @returns {SnoopLogg}
+	 * @access public
+	 */
+	snoop(nsPrefix) {
+		if (nsPrefix && typeof nsPrefix !== 'string') {
+			throw new TypeError('Expected namespace prefix to be a string');
+		}
+
+		this.unsnoop();
+
+		this.onSnoopMessage = msg => {
+			if (msg.id !== this._id) {
+				if (nsPrefix) {
+					msg = Object.assign({}, msg);
+					msg.ns = nsPrefix + (msg.ns || '');
+				}
+				this.dispatch(msg);
+			}
+		};
+
+		process.on('snooplogg', this.onSnoopMessage);
+
+		return this;
+	}
+
+	/**
+	 * Enables all namespaces effectively allowing all logging to be written to stdout/stderr.
+	 *
+	 * @returns {SnoopLogg}
+	 * @access public
+	 */
+	get stdio() {
+		return this.enable('*');
+	}
+
+	/**
+	 * Registers a function that applies a style to a message.
+	 *
+	 * @param {String} name - The name of the style.
+	 * @param {Function} fn - A function to call that applies the style.
+	 * @returns {SnoopLogg}
+	 * @access public
+	 */
+	style(name, fn) {
+		if (!name || typeof name !== 'string') {
+			throw new TypeError('Expected name to be a string');
+		}
+
+		if (!fn || typeof fn !== 'function') {
+			throw new TypeError('Expected fn to be a function');
+		}
+
+		this.styles[name] = fn.bind(this);
+
+		return this;
+	}
+
+	/**
+	 * Registers a function that applies a theme to a message.
+	 *
+	 * @param {String} name - The name of the theme.
+	 * @param {Function} fn - A function to call that applies the theme.
+	 * @returns {SnoopLogg}
+	 * @access public
+	 */
+	theme(name, fn) {
+		if (!name || typeof name !== 'string') {
+			throw new TypeError('Expected name to be a string');
+		}
+
+		if (!fn || typeof fn !== 'function') {
+			throw new TypeError('Expected fn to be a function');
+		}
+
+		this._themes[name] = fn.bind(this);
+
+		return this;
+	}
+
+	/**
+	 * Registers a new log type.
+	 *
+	 * @param {String} name - The log type name.
+	 * @param {Object} [opts] - Various options.
+	 * @param {String} [opts.style] - The color to associate with this type.
+	 * @param {String} [opts.label] - The label to display when print this type of log message.
+	 * @param {Number} [opts.fd] - The file descriptor. Use `0` for stdout and `1` for stderr.
+	 * @returns {SnoopLogg}
+	 * @access public
+	 */
+	type(name, opts = {}) {
+		if (!name || typeof name !== 'string') {
+			throw new TypeError('Expected name to be a non-empty string');
+		}
+
+		if (!opts || typeof opts !== 'object') {
+			throw new TypeError('Expected opts to be an object');
+		}
+
+		const type = this._types[name] = {
+			type:      name,
+			typeStyle: opts.style,
+			typeLabel: opts.label !== undefined ? opts.label : name,
+			fd:        opts.fd || 0
+		};
+
+		if (!Object.getOwnPropertyDescriptor(this.__proto__.__proto__, name)) {
+			// wire up the actual log type function
+			// note: this has to use a getter so that `this` can be resolved at
+			// runtime because if you `import { info } from 'SnoopLogg'`, `info()`
+			// gets forced into the global context.
+			const root = this;
+			Object.defineProperty(this.__proto__.__proto__, name, {
+				configurable: true,
+				enumerable: true,
+				value(...args) {
+					root.dispatch({
+						id: root._id,
+						args: typeof opts.transform === 'function' ? opts.transform(args) : args,
+						...type,
+						ns: this._namespace,
+						nsStyle: this._namespaceStyle,
+						ts: new Date,
+						enabled: this.enabled
+					});
+					return this;
+				}
+			});
+		}
+
+		return this;
+	}
+
+	/**
 	 * Stops piping messages to the specified stream.
 	 *
 	 * @param {stream.Writable} stream - The stream to no longer pipe messages to.
@@ -681,83 +711,40 @@ class SnoopLogg extends Logger {
 	}
 
 	/**
-	 * Dispatches a message object through the middlewares, filters, and
-	 * eventually to all output streams.
+	 * Stops listenening for events from other SnoopLogg instances.
 	 *
-	 * @param {Object} msg - A message object.
-	 * @param {Array} msg.args - An array of zero or more arguments that will be
-	 * formatted into the final log message.
+	 * @returns {SnoopLogg}
 	 * @access public
 	 */
-	dispatch(msg) {
-		if (!msg || typeof msg !== 'object') {
-			return;
+	unsnoop() {
+		if (this.onSnoopMessage) {
+			process.removeListener('snooplogg', this.onSnoopMessage);
 		}
-
-		if (!Array.isArray(msg.args)) {
-			throw new TypeError('Expected args to be an array');
-		}
-
-		// run all middleware
-		for (const { fn } of this._middlewares) {
-			msg = fn(msg) || msg;
-		}
-
-		// add the message to the buffer
-		this._buffer.push(msg);
-
-		if ((msg.id === this._id && msg.enabled) || (msg.id !== this._id && this.isEnabled(msg.ns))) {
-			for (const s of this._streams) {
-				msg.formatter = this._themes[s.theme] || this._themes[this._defaultTheme];
-				s.stream.write(s.stream._writableState && s.stream._writableState.objectMode ? msg : format(msg));
-			}
-		}
-
-		if (msg.id === this._id) {
-			process.emit('snooplogg', msg);
-		}
+		return this;
 	}
 
 	/**
-	 * Determines if the specified namespace is enabled.
+	 * Adds a middleware function to the message dispatching system.
 	 *
-	 * @param {?String} namespace - The namespace.
-	 * @returns {Boolean}
+	 * @param {Function} middleware - A middleware function to add to the list.
+	 * @param {Number} [priority=0] - The middleware priority. Negative priority is run before
+	 * positive values.
+	 * @returns {SnoopLogg}
 	 * @access public
 	 */
-	isEnabled(namespace) {
-		const allow = this._allow;
-		if (allow === null) {
-			// all logging is silenced
-			return false;
+	use(middleware, priority = 0) {
+		if (typeof middleware !== 'function') {
+			throw new TypeError('Expected middleware to be a function');
 		}
 
-		if (!namespace || allow === '*') {
-			// nothing to filter
-			return true;
+		if (typeof priority !== 'number') {
+			throw new TypeError('Expected priority to be a number');
 		}
 
-		const ignore = this._ignore;
-		if (allow && allow.test(namespace) && (!ignore || !ignore.test(namespace))) {
-			return true;
-		}
+		this._middlewares.push({ fn: middleware, priority });
+		this._middlewares.sort((a, b) => b.priority - a.priority);
 
-		return false;
-	}
-
-	/**
-	 * Stylizes text.
-	 *
-	 * @param {String} style - A comma-separated list of styles to apply.
-	 * @param {*} text - The string to stylize.
-	 * @returns {String}
-	 * @access private
-	 */
-	applyStyle(style, text) {
-		if (style && text) {
-			return style.split(',').reduce((text, style) => this.styles[style] ? this.styles[style](text) : text, String(text));
-		}
-		return text;
+		return this;
 	}
 }
 
@@ -863,6 +850,30 @@ class StdioStream extends Writable {
 			this.stdout.write(String(msg));
 		}
 		cb();
+	}
+}
+
+/**
+ * A writable stream that will
+ *
+ * @class StdioDispatcher
+ * @extends {Writable}
+ */
+class StdioDispatcher extends Writable {
+	constructor(logger, params) {
+		super();
+		this.logger = logger;
+		this.params = params;
+	}
+
+	_write(data) {
+		const origin = this.logger._root || this.logger;
+		origin.dispatch({
+			id:      origin._id,
+			args:    [ data.toString() ],
+			ts:      new Date,
+			...this.params
+		});
 	}
 }
 
