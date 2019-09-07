@@ -1123,4 +1123,20 @@ describe('SnoopLogg', () => {
 		const { log } = snooplogg('foo');
 		log('bar!');
 	});
+
+	it('should not clobber instance specific prototypes', () => {
+		const logger1 = new SnoopLogg();
+
+		expect(logger1._id).to.equal(logger1.__id);
+
+		const logger2 = new SnoopLogg();
+
+		expect(logger1._id).to.equal(logger1.__id);
+		expect(logger2._id).to.equal(logger2.__id);
+
+		const logger1ns = logger1('foo');
+
+		expect(logger1ns._root._id).to.equal(logger1._id);
+		expect(logger1ns._root.__id).to.equal(logger1ns.__id);
+	});
 });

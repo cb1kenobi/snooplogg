@@ -38,11 +38,15 @@ class Logger extends Functionator {
 		const ns = !namespace ? [] : (parent && parent._ns || []).concat(namespace);
 
 		super(namespace => {
-			let proto = this.__proto__;
-			while (proto && proto.constructor.name !== 'Logger') {
-				proto = proto.__proto__;
+			if (!this._namespaces[namespace]) {
+				this._namespaces[namespace] = bind(
+					Object.setPrototypeOf(
+						new Logger(namespace, this, this._root, style),
+						this._root.proto
+					)
+				);
 			}
-			return this._namespaces[namespace] || (this._namespaces[namespace] = bind(Object.setPrototypeOf(new Logger(namespace, this, this._root, style), proto)));
+			return this._namespaces[namespace];
 		});
 
 		Object.defineProperties(this, {
@@ -112,7 +116,13 @@ class Logger extends Functionator {
 	 * @access public
 	 */
 	createStream({ fd, type } = {}) {
-		return new StdioDispatcher(this, { type, fd, ns: this._namespace, nsStyle: this._namespaceStyle, enabled: this.enabled });
+		return new StdioDispatcher(this, {
+			type,
+			fd,
+			ns: this._namespace,
+			nsStyle: this._namespaceStyle,
+			enabled: this.enabled
+		});
 	}
 
 	/**
@@ -170,14 +180,20 @@ class SnoopLogg extends Logger {
 			 * The log message buffer.
 			 * @type {Array.<Object>}
 			 */
-			_buffer: { writable: true, value: new NanoBuffer(process.env.SNOOPLOGG_MAX_BUFFER_SIZE !== undefined ? Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BUFFER_SIZE)) : 0) },
+			_buffer: {
+				writable: true,
+				value: new NanoBuffer(process.env.SNOOPLOGG_MAX_BUFFER_SIZE !== undefined ? Math.max(0, parseInt(process.env.SNOOPLOGG_MAX_BUFFER_SIZE)) : 0)
+			},
 
 			/**
 			 * An array of available colors to choose from when rendering auto-styled labels such
 			 * as the namespace.
 			 * @type {Array.<String>}
 			 */
-			_colors: { writable: true, value: process.env.SNOOPLOGG_COLOR_LIST ? process.env.SNOOPLOGG_COLOR_LIST.split(',') : [] },
+			_colors: {
+				writable: true,
+				value: process.env.SNOOPLOGG_COLOR_LIST ? process.env.SNOOPLOGG_COLOR_LIST.split(',') : []
+			},
 
 			/**
 			 * The default theme to apply if a stream didn't specify one.
@@ -272,8 +288,38 @@ class SnoopLogg extends Logger {
 			}
 		});
 
-		// swap out the Logger prototype for a copy that `type()` will modify
-		this.__proto__.__proto__ = Object.defineProperty(Object.create(Logger.prototype), '__id', { value: this._id });
+		// This is where things get complicated...
+		//
+		// The prototype chain at this point looks like this:
+		//
+		//    `SnoopLogg.prototype`
+		//      `Logger.prototype`
+		//        `Functionator.prototype`
+		//          `Object.prototype`
+		//
+		// We want `type()` to dynamically add new log functions to `Logger.prototype` so that
+		// every namespace under a specific `SnoopLogg` instance can use it, but we don't want
+		// the new log functions added to every `SnoopLogg` instance.
+		//
+		// We need to generate a new `Logger.prototype` and swap out the original in this
+		// instance's prototype for a cloned `Logger.prototype` that `type()` can modify. To make
+		// things more complicated, you can't just swap out the `Logger.prototype` because it's
+		// under `SnoopLogg.prototype` and that would affect every `SnoopLogg` instance.
+		//
+		// What we need to do is create a new `Logger.prototype` and cache it so nested namespaced
+		// `Logger` instances can reference it. Then we need to a generate a new `SnoopLogg`
+		// prototype that extends the generated `Logger.prototype` and set the prototype of this
+		// instance to it.
+		//
+		//    Cloned `SnoopLogg.prototype`
+		//      Cloned and cached `Logger.prototype`
+		//        'Functionator.prototype`
+		//          'Object.prototype'
+
+		this.proto = Object.create(Functionator, Object.getOwnPropertyDescriptors(Logger.prototype));
+		Object.defineProperty(this.proto, '__id', { value: this._id });
+
+		Object.setPrototypeOf(this, Object.create(this.proto, Object.getOwnPropertyDescriptors(SnoopLogg.prototype)));
 
 		if (opts) {
 			this.config(opts);
@@ -499,7 +545,10 @@ class SnoopLogg extends Logger {
 	 * @access public
 	 */
 	ns(namespace) {
-		return this._namespaces[namespace] || (this._namespaces[namespace] = Object.setPrototypeOf(new Logger(namespace, this, this), this.__proto__.__proto__));
+		if (!this._namespaces[namespace]) {
+			this._namespaces[namespace] = bind(Object.setPrototypeOf(new Logger(namespace, this, this), this.proto));
+		}
+		return this._namespaces[namespace];
 	}
 
 	/**
@@ -663,13 +712,13 @@ class SnoopLogg extends Logger {
 			fd:        opts.fd || 0
 		};
 
-		if (!Object.getOwnPropertyDescriptor(this.__proto__.__proto__, name)) {
+		if (!Object.getOwnPropertyDescriptor(this.proto, name)) {
 			// wire up the actual log type function
 			// note: this has to use a getter so that `this` can be resolved at
 			// runtime because if you `import { info } from 'SnoopLogg'`, `info()`
 			// gets forced into the global context.
 			const root = this;
-			Object.defineProperty(this.__proto__.__proto__, name, {
+			Object.defineProperty(this.proto, name, {
 				configurable: true,
 				enumerable: true,
 				value(...args) {
@@ -867,14 +916,15 @@ class StdioDispatcher extends Writable {
 		this.params = params;
 	}
 
-	_write(data) {
+	_write(data, enc, cb) {
 		const origin = this.logger._root || this.logger;
 		origin.dispatch({
 			id:      origin._id,
-			args:    [ data.toString() ],
+			args:    [ data.toString().replace(/(\r\n|\n)$/, '') ],
 			ts:      new Date,
 			...this.params
 		});
+		cb();
 	}
 }
 
