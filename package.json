@@ -25,7 +25,7 @@
   },
   "dependencies": {
     "bryt": "^1.0.1",
-    "chalk": "^2.4.2",
+    "chalk": "^3.0.0",
     "nanobuffer": "^1.1.5",
     "source-map-support": "^0.5.13",
     "supports-color": "^7.0.0"
