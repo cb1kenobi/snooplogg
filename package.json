@@ -1,6 +1,6 @@
 {
   "name": "snooplogg",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "Your mind on your logs and your logs on your mind",
   "main": "./dist/index.js",
   "author": "Chris Barber <chris@cb1inc.com> (https://github.com/cb1kenobi)",
@@ -28,12 +28,12 @@
     "chalk": "^4.1.0",
     "nanobuffer": "^1.1.7",
     "source-map-support": "^0.5.19",
-    "supports-color": "^8.0.0"
+    "supports-color": "^8.1.0"
   },
   "devDependencies": {
-    "@babel/core": "^7.12.9",
+    "@babel/core": "^7.12.10",
     "@babel/plugin-transform-modules-commonjs": "^7.12.1",
-    "@babel/register": "^7.12.1",
+    "@babel/register": "^7.12.10",
     "ansi-colors": "^4.1.1",
     "babel-eslint": "^10.1.0",
     "babel-loader": "^8.2.2",
@@ -43,7 +43,7 @@
     "esdoc": "^1.1.0",
     "esdoc-ecmascript-proposal-plugin": "^1.0.0",
     "esdoc-standard-plugin": "^1.0.0",
-    "eslint": "^7.14.0",
+    "eslint": "^7.17.0",
     "eslint-plugin-chai-expect": "^2.2.0",
     "eslint-plugin-mocha": "^8.0.0",
     "eslint-plugin-promise": "^4.2.1",
