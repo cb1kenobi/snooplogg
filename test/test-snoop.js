@@ -153,9 +153,9 @@ describe('SnoopLogg', () => {
 	});
 
 	it('should output log types', () => {
-		const types = [ /* 'trace', */ 'debug', 'info', 'warn', 'error', 'fatal' ];
+		const types = [ 'trace','debug', 'info', 'warn', 'error', 'fatal' ];
 		const expected = [
-			// /^\u001b\[90mtrace\u001b\[39m Trace: trace\(\) test\n/,
+			/^\u001b\[90mtrace\u001b\[39m Trace: trace\(\) test\n/,
 			'\u001b[35mdebug\u001b[39m debug() test\n',
 			'\u001b[32minfo\u001b[39m info() test\n',
 			'\u001b[33mwarn\u001b[39m warn() test\n',
@@ -164,19 +164,13 @@ describe('SnoopLogg', () => {
 		];
 		let i = 0;
 
-		// 1b 5b 39 30 6d 74 72 61 63 65 1b 5b 33 39 6d 20 54 72 61 63 65 3a 20 74 72 61 63 65 28 29 20 74 65 73 74 0a 1b 5b 39 30 6d 74 72 61 63 65 1b 5b 33 39
-		//                74 72 61 63 65                20 54 72 61 63 65 3a 20 74 72 61 63 65 28 29 20 74 65 73 74 0a                74 72 61 63 65 20 20 20 20 20 61 74 20 43 6f 6e 74 65 78 74 2e 3c 61 6e
-		//                t  r  a  c  e                 ?  T  r  a  c  e
-
 		class MockOutputStream extends Writable {
 			_write(msg, enc, cb) {
 				try {
 					expect(msg).to.be.instanceof(Buffer);
 					const value = expected[i++];
 					if (value instanceof RegExp) {
-						const s = msg.toString();
-						console.log(Buffer.from(s));
-						expect(s).to.match(value);
+						expect(msg.toString()).to.match(value);
 					} else {
 						expect(msg.toString()).to.equal(value);
 					}

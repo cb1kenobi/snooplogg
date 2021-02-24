@@ -1,4 +1,5 @@
 environment:
+  FORCE_COLOR: 1
   matrix:
     # node.js
     - nodejs_version: "14"
