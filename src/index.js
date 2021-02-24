@@ -1,6 +1,4 @@
-import 'source-map-support/register';
-
-import bryt from 'bryt';
+import * as bryt from 'bryt-lite';
 import chalk from 'chalk';
 import NanoBuffer from 'nanobuffer';
 import supportsColor from 'supports-color';

@@ -1,12 +1,12 @@
-import snooplogg from '../dist/index';
+import snooplogg from '../src/index.js';
 import util from 'util';
-
+import { expect } from 'chai';
 import {
 	createInstanceWithDefaults,
 	Format,
 	SnoopLogg,
 	StripColors
-} from '../dist/index';
+} from '../src/index.js';
 
 import { Console } from 'console';
 import { Transform, Writable } from 'stream';

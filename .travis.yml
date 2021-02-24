@@ -1,6 +1,5 @@
 language: node_js
 node_js:
-  - "10"
   - "12"
   - "14"
 os: linux
@@ -13,5 +12,3 @@ cache:
 install: yarn
 before_script: sh -c "git log | head -12"
 script: yarn run coverage
-after_success:
-  - coveralls < ./coverage/lcov.info
