@@ -4,7 +4,6 @@
 [![NPM Downloads][downloads-image]][downloads-url]
 [![Travis CI Build][travis-image]][travis-url]
 [![Appveyor CI Build][appveyor-image]][appveyor-url]
-[![Test Coverage][coveralls-image]][coveralls-url]
 [![Deps][david-image]][david-url]
 [![Dev Deps][david-dev-image]][david-dev-url]
 
@@ -247,8 +246,6 @@ MIT
 [travis-url]: https://travis-ci.org/cb1kenobi/snooplogg
 [appveyor-image]: https://ci.appveyor.com/api/projects/status/ecpifaqt54itg7h4?svg=true
 [appveyor-url]: https://ci.appveyor.com/project/cb1kenobi/snooplogg
-[coveralls-image]: https://img.shields.io/coveralls/cb1kenobi/snooplogg/master.svg
-[coveralls-url]: https://coveralls.io/r/cb1kenobi/snooplogg
 [david-image]: https://img.shields.io/david/cb1kenobi/snooplogg.svg
 [david-url]: https://david-dm.org/cb1kenobi/snooplogg
 [david-dev-image]: https://img.shields.io/david/dev/cb1kenobi/snooplogg.svg

@@ -1,12 +1,12 @@
-import snooplogg from '../dist/index';
+import snooplogg from '../src/index.js';
 import util from 'util';
-
+import { expect } from 'chai';
 import {
 	createInstanceWithDefaults,
 	Format,
 	SnoopLogg,
 	StripColors
-} from '../dist/index';
+} from '../src/index.js';
 
 import { Console } from 'console';
 import { Transform, Writable } from 'stream';
@@ -153,7 +153,7 @@ describe('SnoopLogg', () => {
 	});
 
 	it('should output log types', () => {
-		const types = [ 'trace', 'debug', 'info', 'warn', 'error', 'fatal' ];
+		const types = [ 'trace','debug', 'info', 'warn', 'error', 'fatal' ];
 		const expected = [
 			/^\u001b\[90mtrace\u001b\[39m Trace: trace\(\) test\n/,
 			'\u001b[35mdebug\u001b[39m debug() test\n',

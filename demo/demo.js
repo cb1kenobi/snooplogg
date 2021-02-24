@@ -1,8 +1,6 @@
-'use strict';
-
 console.log('\n\n$ node demo.js')
 
-const snooplogg = require('../dist/index').default;
+import snooplogg from '../src/index.js';
 
 snooplogg.stdio
 	.config({
