@@ -170,7 +170,9 @@ describe('SnoopLogg', () => {
 					expect(msg).to.be.instanceof(Buffer);
 					const value = expected[i++];
 					if (value instanceof RegExp) {
-						expect(msg.toString()).to.match(value);
+						const s = msg.toString();
+						console.log(Buffer.from(s));
+						expect(s).to.match(value);
 					} else {
 						expect(msg.toString()).to.equal(value);
 					}
