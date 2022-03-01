@@ -1,0 +1,40 @@
+name: Build
+on:
+  - pull_request
+  - push
+
+jobs:
+  Lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '16.x'
+      - name: Install dependencies
+        run: yarn
+      - name: Lint
+        run: yarn run lint
+
+  Test:
+    needs: Lint
+    name: ${{ matrix.os }} ${{ matrix.nodeVersion }} Tests
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        nodeVersion: [ '14.17.1', '16.14.0', '17.6.0' ]
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.nodeVersion }}
+      - name: Install dependencies
+        run: yarn
+      - name: Run tests
+        run: yarn run test
