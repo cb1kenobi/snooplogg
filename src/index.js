@@ -1,11 +1,19 @@
 import * as bryt from 'bryt-lite';
-import chalk from 'chalk';
 import NanoBuffer from 'nanobuffer';
 import supportsColor from 'supports-color';
 import util from 'util';
 
+import { Chalk } from 'chalk';
 import { Console } from 'console';
 import { Transform, Writable } from 'stream';
+
+/**
+ * The chalk instance with all colors enabled.
+ * @type {Chalk}
+ */
+const chalk = new Chalk({
+	level: 3
+});
 
 /**
  * The secret sauce.

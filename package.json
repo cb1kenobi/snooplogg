@@ -21,7 +21,8 @@
     "coverage": "c8 npm run test",
     "lint": "eslint src test",
     "prepublishOnly": "npm run lint",
-    "test": "npm run lint && mocha test/**/test-*.js --reporter spec"
+    "test": "npm run lint && mocha test/**/test-*.js --reporter spec",
+    "test-no-tty": "node -e \"try { console.log(require('child_process').execSync('yarn test').toString()); } catch (e) { console.log(e, e.stdout.toString()); console.log(e.stderr.toString()); }\""
   },
   "dependencies": {
     "bryt-lite": "^2.0.0",
