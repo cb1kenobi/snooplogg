@@ -26,19 +26,19 @@
   },
   "dependencies": {
     "bryt-lite": "^2.0.0",
-    "chalk": "^5.0.1",
+    "chalk": "^5.0.0",
     "nanobuffer": "^3.0.0",
-    "supports-color": "^9.2.2"
+    "supports-color": "^9.2.1"
   },
   "devDependencies": {
-    "c8": "^7.11.3",
+    "c8": "^7.11.0",
     "chai": "^4.3.6",
-    "eslint": "^8.19.0",
+    "eslint": "^8.10.0",
     "eslint-plugin-chai-expect": "^3.0.0",
-    "eslint-plugin-mocha": "^10.0.5",
+    "eslint-plugin-mocha": "^10.0.3",
     "eslint-plugin-promise": "^6.0.0",
-    "eslint-plugin-security": "^1.5.0",
-    "mocha": "^10.0.0"
+    "eslint-plugin-security": "^1.4.0",
+    "mocha": "^9.2.1"
   },
   "homepage": "https://github.com/cb1kenobi/snooplogg",
   "bugs": "https://github.com/cb1kenobi/snooplogg/issues",

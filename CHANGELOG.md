@@ -1,7 +1,6 @@
 # v5.0.1 (July 6, 2022)
 
  * fix: Re-export original chalk instance instead of instance with forced colors.
- * chore: Updated dependencies.
 
 # v5.0.0 (Mar 2, 2022)
 
