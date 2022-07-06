@@ -3,7 +3,7 @@ import NanoBuffer from 'nanobuffer';
 import supportsColor from 'supports-color';
 import util from 'util';
 
-import { Chalk } from 'chalk';
+import chalk, { Chalk } from 'chalk';
 import { Console } from 'console';
 import { Transform, Writable } from 'stream';
 
@@ -11,7 +11,7 @@ import { Transform, Writable } from 'stream';
  * The chalk instance with all colors enabled.
  * @type {Chalk}
  */
-const chalk = new Chalk({
+const chalkForcedColors = new Chalk({
 	level: 3
 });
 
@@ -994,45 +994,45 @@ function createInstanceWithDefaults() {
 		.type('error', { style: 'red',         fd: 1 })
 		.type('fatal', { style: 'white,bgRed', fd: 1 })
 
-		.style('bold',          chalk.bold)
-		.style('dim',           chalk.dim)
-		.style('italic',        chalk.italic)
-		.style('underline',     chalk.underline)
-		.style('inverse',       chalk.inverse)
-		.style('hidden',        chalk.hidden)
-		.style('strikethrough', chalk.strikethrough)
+		.style('bold',          chalkForcedColors.bold)
+		.style('dim',           chalkForcedColors.dim)
+		.style('italic',        chalkForcedColors.italic)
+		.style('underline',     chalkForcedColors.underline)
+		.style('inverse',       chalkForcedColors.inverse)
+		.style('hidden',        chalkForcedColors.hidden)
+		.style('strikethrough', chalkForcedColors.strikethrough)
 
-		.style('black',         chalk.black)
-		.style('red',           chalk.red)
-		.style('black',         chalk.black)
-		.style('green',         chalk.green)
-		.style('yellow',        chalk.yellow)
-		.style('blue',          chalk.blue)
-		.style('magenta',       chalk.magenta)
-		.style('cyan',          chalk.cyan)
-		.style('white',         chalk.white)
-		.style('gray',          chalk.gray)
+		.style('black',         chalkForcedColors.black)
+		.style('red',           chalkForcedColors.red)
+		.style('black',         chalkForcedColors.black)
+		.style('green',         chalkForcedColors.green)
+		.style('yellow',        chalkForcedColors.yellow)
+		.style('blue',          chalkForcedColors.blue)
+		.style('magenta',       chalkForcedColors.magenta)
+		.style('cyan',          chalkForcedColors.cyan)
+		.style('white',         chalkForcedColors.white)
+		.style('gray',          chalkForcedColors.gray)
 
-		.style('bgBlack',       chalk.bgBlack)
-		.style('bgRed',         chalk.bgRed)
-		.style('bgGreen',       chalk.bgGreen)
-		.style('bgYellow',      chalk.bgYellow)
-		.style('bgBlue',        chalk.bgBlue)
-		.style('bgMagenta',     chalk.bgMagenta)
-		.style('bgCyan',        chalk.bgCyan)
-		.style('bgWhite',       chalk.bgWhite)
+		.style('bgBlack',       chalkForcedColors.bgBlack)
+		.style('bgRed',         chalkForcedColors.bgRed)
+		.style('bgGreen',       chalkForcedColors.bgGreen)
+		.style('bgYellow',      chalkForcedColors.bgYellow)
+		.style('bgBlue',        chalkForcedColors.bgBlue)
+		.style('bgMagenta',     chalkForcedColors.bgMagenta)
+		.style('bgCyan',        chalkForcedColors.bgCyan)
+		.style('bgWhite',       chalkForcedColors.bgWhite)
 
 		.style('uppercase',     s => String(s).toUpperCase())
 		.style('lowercase',     s => String(s).toLowerCase())
 		.style('bracket',       s => `[${s}]`)
 		.style('paren',         s => `(${s})`)
 
-		.style('highlight',     chalk.cyan)
-		.style('lowlight',      chalk.blue)
-		.style('ok',            chalk.green)
-		.style('notice',        chalk.yellow)
-		.style('alert',         chalk.red)
-		.style('note',          chalk.gray)
+		.style('highlight',     chalkForcedColors.cyan)
+		.style('lowlight',      chalkForcedColors.blue)
+		.style('ok',            chalkForcedColors.green)
+		.style('notice',        chalkForcedColors.yellow)
+		.style('alert',         chalkForcedColors.red)
+		.style('note',          chalkForcedColors.gray)
 
 		.style('auto', function (text) {
 			let hash = 0;
@@ -1067,7 +1067,7 @@ function createInstanceWithDefaults() {
 			}
 
 			if (Array.isArray(color)) {
-				return chalk.rgb.apply(chalk, color)(text);
+				return chalkForcedColors.rgb.apply(chalkForcedColors, color)(text);
 			}
 
 			return this.styles[color](text);
