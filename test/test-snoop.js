@@ -398,24 +398,8 @@ describe('SnoopLogg', () => {
 	});
 
 	it('should expose colors api', () => {
-		class MockOutputStream extends Writable {
-			_write(msg, enc, cb) {
-				try {
-					expect(msg).to.be.instanceof(Buffer);
-					expect(msg.toString()).to.equal('the \u001b[31mred\u001b[39m car\n');
-					cb();
-				} catch (e) {
-					cb(e);
-				}
-			}
-		}
-
-		const instance = createInstanceWithDefaults()
-			.config({ theme: 'minimal' })
-			.enable('*')
-			.pipe(new MockOutputStream);
-
-		instance.log(`the ${instance.chalk.red('red')} car`);
+		const instance = createInstanceWithDefaults();
+		expect(instance.chalk.red).to.be.a('function');
 	});
 
 	it('should use a custom theme', () => {
