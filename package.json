@@ -1,6 +1,6 @@
 {
   "name": "snooplogg",
-  "version": "5.0.1",
+  "version": "5.1.0",
   "description": "Your mind on your logs and your logs on your mind",
   "type": "module",
   "exports": "./src/index.js",
