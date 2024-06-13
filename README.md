@@ -1,8 +1,5 @@
 # SnoopLogg
 
-[![NPM Version][npm-image]][npm-url]
-[![NPM Downloads][downloads-image]][downloads-url]
-
 Laid back debug logging.
 
 ## Installation
@@ -19,7 +16,6 @@ Laid back debug logging.
  * Namespacing
  * Filter messages using the `DEBUG` (or `SNOOPLOGG`) environment variable
  * Automatic color selection with brightness range
- * Exports [chalk](https://www.npmjs.com/pacakge/chalk) library for your convenience.
  * Similar API to [TJ's debug](https://www.npmjs.com/package/debug):
 
 ## Examples
@@ -233,8 +229,3 @@ instances.
 ## License
 
 MIT
-
-[npm-image]: https://img.shields.io/npm/v/snooplogg.svg
-[npm-url]: https://npmjs.org/package/snooplogg
-[downloads-image]: https://img.shields.io/npm/dm/snooplogg.svg
-[downloads-url]: https://npmjs.org/package/snooplogg

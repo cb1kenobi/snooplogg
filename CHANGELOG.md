@@ -1,3 +1,11 @@
+# v6.0.0
+
+ * BREAKING CHANGE: Require Node.js 18.17.0 or newer
+ * BREAKING CHANGE: Removed support for custom log methods
+ * BREAKING CHANGE: Removed support for middleware
+ * BREAKING CHANGE: All logout is written to stderr
+ * feat: Improved color highlighting system
+
 # v5.1.0 (July 14, 2022)
 
  * fix: Re-export original chalk instance instead of instance with forced colors.

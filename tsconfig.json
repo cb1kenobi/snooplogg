@@ -1,0 +1,29 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "composite": false,
+    "declaration": true,
+    "declarationMap": true,
+    "esModuleInterop": false,
+    "forceConsistentCasingInFileNames": true,
+    "inlineSources": false,
+    "isolatedModules": true,
+    "lib": ["esnext"],
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "noImplicitAny": false,
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "preserveWatchOutput": true,
+    "removeComments": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "sourceMap": true,
+    "target": "esnext",
+    "typeRoots": ["./node_modules/@types"],
+    "types": ["node"]
+  },
+  "include": ["./src"]
+}

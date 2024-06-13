@@ -1,6 +1,6 @@
 {
   "name": "snooplogg",
-  "version": "5.1.0",
+  "version": "6.0.0",
   "description": "Your mind on your logs and your logs on your mind",
   "type": "module",
   "exports": "./src/index.js",
@@ -18,32 +18,27 @@
     "snooping"
   ],
   "scripts": {
-    "coverage": "c8 npm run test",
-    "lint": "eslint src test",
-    "prepublishOnly": "npm run lint",
-    "test": "npm run lint && mocha test/**/test-*.js --reporter spec",
-    "test-no-tty": "node -e \"try { console.log(require('child_process').execSync('yarn test').toString()); } catch (e) { console.log(e, e.stdout.toString()); console.log(e.stderr.toString()); }\""
-  },
-  "dependencies": {
-    "bryt-lite": "^2.0.0",
-    "chalk": "^5.0.1",
-    "nanobuffer": "^3.0.0",
-    "supports-color": "^9.2.2"
+    "build": "tsc",
+    "check": "biome check --write .",
+    "coverage": "vitest --coverage",
+    "lint": "biome lint --write .",
+    "prepublishOnly": "pnpm run build",
+    "test": "vitest",
+    "test-no-tty": "node -e \"try { console.log(require('child_process').execSync('pnpm test').toString()); } catch (e) { console.log(e, e.stdout.toString()); console.log(e.stderr.toString()); }\"",
+    "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "c8": "^7.11.3",
-    "chai": "^4.3.6",
-    "eslint": "^8.19.0",
-    "eslint-plugin-chai-expect": "^3.0.0",
-    "eslint-plugin-mocha": "^10.0.5",
-    "eslint-plugin-promise": "^6.0.0",
-    "eslint-plugin-security": "^1.5.0",
-    "mocha": "^10.0.0"
+    "@biomejs/biome": "1.8.1",
+    "@types/node": "20.14.2",
+    "@vitest/coverage-v8": "^1.6.0",
+    "lefthook": "1.6.15",
+    "typescript": "5.4.5",
+    "vitest": "1.6.0"
   },
   "homepage": "https://github.com/cb1kenobi/snooplogg",
   "bugs": "https://github.com/cb1kenobi/snooplogg/issues",
   "repository": "https://github.com/cb1kenobi/snooplogg",
   "engines": {
-    "node": ">=14.15.0"
+    "node": ">=18.17"
   }
 }
