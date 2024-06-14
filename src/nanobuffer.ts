@@ -5,22 +5,22 @@ export class NanoBuffer<T> {
 	/**
 	 * The buffer where the values are stored.
 	 */
-	#buffer: T[];
+	buffer: T[];
 
 	/**
 	 * The index of the newest value in the buffer.
 	 */
-	#head = 0;
+	_head = 0;
 
 	/**
 	 * The maximum number of values to store in the buffer.
 	 */
-	#maxSize: number;
+	_maxSize: number;
 
 	/**
 	 * The number of values in the buffer.
 	 */
-	#size = 0;
+	_size = 0;
 
 	/**
 	 * Creates a `NanoBuffer` instance.
@@ -36,8 +36,8 @@ export class NanoBuffer<T> {
 			throw new RangeError('Expected maxSize to be zero or greater');
 		}
 
-		this.#buffer = Array(maxSize | 0);
-		this.#maxSize = maxSize;
+		this.buffer = Array(maxSize | 0);
+		this._maxSize = maxSize;
 	}
 
 	/**
@@ -47,7 +47,7 @@ export class NanoBuffer<T> {
 	 * @access public
 	 */
 	get head() {
-		return this.#head;
+		return this._head;
 	}
 
 	/**
@@ -57,42 +57,42 @@ export class NanoBuffer<T> {
 	 * @access public
 	 */
 	get maxSize() {
-		return this.#maxSize;
+		return this._maxSize;
 	}
 
 	/**
 	 * Changes the maximum number of values allowed in the buffer.
 	 *
-	 * @param {Number} newMaxSize - The new max size of the buffer.
+	 * @param {Number} new_maxSize - The new max size of the buffer.
 	 * @access public
 	 */
-	set maxSize(newMaxSize) {
-		if (typeof newMaxSize !== 'number') {
+	set maxSize(new_maxSize) {
+		if (typeof new_maxSize !== 'number') {
 			throw new TypeError('Expected new max size to be a number');
 		}
 
-		if (Number.isNaN(newMaxSize) || newMaxSize < 0) {
+		if (Number.isNaN(new_maxSize) || new_maxSize < 0) {
 			throw new RangeError('Expected new max size to be zero or greater');
 		}
 
-		if (newMaxSize === this.#maxSize) {
+		if (new_maxSize === this._maxSize) {
 			// nothing to do
 			return;
 		}
 
 		// somewhat lazy, but we create a new buffer, then manually copy
 		// ourselves into it, then steal back the internal values
-		const tmp = new NanoBuffer<T>(newMaxSize);
+		const tmp = new NanoBuffer<T>(new_maxSize);
 		for (const value of this) {
 			if (value !== undefined) {
 				tmp.push(value);
 			}
 		}
 
-		this.#buffer = tmp.#buffer;
-		this.#head = tmp.#head;
-		this.#maxSize = tmp.#maxSize;
-		this.#size = tmp.#size;
+		this.buffer = tmp.buffer;
+		this._head = tmp.head;
+		this._maxSize = tmp._maxSize;
+		this._size = tmp.size;
 	}
 
 	/**
@@ -102,7 +102,7 @@ export class NanoBuffer<T> {
 	 * @access public
 	 */
 	get size() {
-		return this.#size;
+		return this._size;
 	}
 
 	/**
@@ -113,18 +113,18 @@ export class NanoBuffer<T> {
 	 * @access public
 	 */
 	push(value: T) {
-		if (this.#maxSize) {
-			if (this.#size > 0) {
-				this.#head++;
+		if (this._maxSize) {
+			if (this._size > 0) {
+				this._head++;
 			}
 
-			if (this.#head >= this.#maxSize) {
+			if (this._head >= this._maxSize) {
 				// we wrapped
-				this.#head = 0;
+				this._head = 0;
 			}
 
-			this.#size = Math.min(this.#size + 1, this.#maxSize);
-			this.#buffer[this.#head] = value;
+			this._size = Math.min(this._size + 1, this._maxSize);
+			this.buffer[this._head] = value;
 		}
 
 		return this;
@@ -137,9 +137,9 @@ export class NanoBuffer<T> {
 	 * @access public
 	 */
 	clear() {
-		this.#buffer = Array(this.#maxSize);
-		this.#head = 0;
-		this.#size = 0;
+		this.buffer = Array(this._maxSize);
+		this._head = 0;
+		this._size = 0;
 		return this;
 	}
 
@@ -155,19 +155,19 @@ export class NanoBuffer<T> {
 		return {
 			next: () => {
 				// just in case the size changed
-				i = Math.min(i, this.#maxSize);
+				i = Math.min(i, this._maxSize);
 
 				// calculate the index
-				let j = this.#head + i - (this.#size - 1);
+				let j = this.head + i - (this._size - 1);
 				if (j < 0) {
-					j += this.#maxSize;
+					j += this._maxSize;
 				}
 
-				// console.log('\ni=' + i + ' head=' + this.#head + ' size=' + this.#size + ' maxSize=' + this.#maxSize + ' j=' + j);
+				// console.log('\ni=' + i + ' head=' + this._head + ' size=' + this._size + ' maxSize=' + this._maxSize + ' j=' + j);
 
-				const done = i++ >= this.#size;
+				const done = i++ >= this._size;
 				return {
-					value: done ? undefined : this.#buffer[j],
+					value: done ? undefined : this.buffer[j],
 					done
 				};
 			}
