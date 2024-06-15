@@ -4,6 +4,7 @@ import ansiStyles from 'ansi-styles';
 import { NanoBuffer } from './nanobuffer.js';
 import { nsToRgb } from './ns-to-rgb.js';
 import type {
+	AnsiStyles,
 	FormatLogStyles,
 	LogFormatter,
 	LogMessage,
@@ -18,44 +19,73 @@ import type {
  * TODO:
  * - [ ] Add JSDoc comments
  * - [ ] Finish demo (snoop, nested logger styles)
- * - [ ] Add tests
+ * - [ ] Add tests/coverage
  * - [ ] Fix pipe()
  * - [ ] Update readme
+ * - [ ] Test Deno
+ * - [ ] Test Bun
  */
 
 export type LogMethod = (...args: unknown[]) => Logger;
 
+const stackFrameRE = /^\s*at (.* )?(\(?.+\)?)$/;
+
 const defaultStyles: FormatLogStyles = {
-	method(name: string) {
+	error(err: Error, styles: AnsiStyles) {
+		const message = `${styles.redBright.open}${err.toString()}${styles.redBright.close}`;
+		let stack = '';
+		if (err.stack) {
+			stack = err.stack
+				.split('\n')
+				.slice(1)
+				.map((line, i, lines) => {
+					const m = line.match(stackFrameRE);
+					if (m) {
+						const [_, method, location] = m;
+						const stlyedMethod = method
+							? `${styles.whiteBright.open}${styles.italic.open}${method}${styles.italic.close}${styles.whiteBright.close}`
+							: '';
+						return `${styles.gray.open}${i + 1 < lines.length ? '├' : '└'}─ ${styles.gray.close}${stlyedMethod}${styles.white.open}${location}${styles.white.close}`;
+					}
+					return `${styles.gray.open}${line}${styles.gray.close}`;
+				})
+				.join('\n');
+		}
+		return stack ? `${message}\n${stack}` : message;
+	},
+	message(msg: string, method: string, styles: AnsiStyles) {
+		if (method === 'trace') {
+			return `${styles.white.open}${msg}${styles.white.close}`;
+		}
+		return msg;
+	},
+	method(name: string, styles: AnsiStyles) {
 		const formattedName = name.toUpperCase().padEnd(5);
 		switch (name) {
 			case 'trace':
-				return `${ansiStyles.gray.open}${formattedName}${ansiStyles.gray.close}`;
+				return `${styles.gray.open}${formattedName}${styles.gray.close}`;
 			case 'debug':
-				return `${ansiStyles.magenta.open}${formattedName}${ansiStyles.magenta.close}`;
+				return `${styles.magenta.open}${formattedName}${styles.magenta.close}`;
 			case 'info':
-				return `${ansiStyles.red.open}${formattedName}${ansiStyles.red.close}`;
+				return `${styles.green.open}${formattedName}${styles.green.close}`;
 			case 'warn':
-				return `${ansiStyles.yellow.open}${formattedName}${ansiStyles.yellow.close}`;
+				return `${styles.yellow.open}${formattedName}${styles.yellow.close}`;
 			case 'error':
-				return `${ansiStyles.red.open}${formattedName}${ansiStyles.red.close}`;
+				return `${styles.redBright.open}${formattedName}${styles.redBright.close}`;
 			case 'panic':
-				return `${ansiStyles.bgRed.open}${ansiStyles.white.open}${formattedName}${ansiStyles.white.close}${ansiStyles.bgRed.close}`;
+				return `${styles.bgRed.open}${styles.white.open}${formattedName}${styles.white.close}${styles.bgRed.close}`;
 			default:
 				return formattedName;
 		}
 	},
-	namespace(ns: string) {
+	namespace(ns: string, styles: AnsiStyles) {
 		const { r, g, b } = nsToRgb(ns);
-		return `${ansiStyles.color.ansi256(
-			ansiStyles.rgbToAnsi256(r, g, b)
-		)}${ns}${ansiStyles.color.close}`;
+		return `${styles.color.ansi256(
+			styles.rgbToAnsi256(r, g, b)
+		)}${ns}${styles.color.close}`;
 	},
-	timestamp(ts: Date) {
-		return `${ansiStyles.gray.open}${ts.toISOString().replace('T', ' ').replace('Z', '')}${ansiStyles.gray.close}`;
-	},
-	message(msg: string, method: string) {
-		return msg;
+	timestamp(ts: Date, styles: AnsiStyles) {
+		return `${styles.gray.open}${ts.toISOString().replace('T', ' ').replace('Z', '')}${styles.gray.close}`;
 	}
 };
 
@@ -96,7 +126,6 @@ class Logger extends Functionator {
 
 		super((namespace: string) => {
 			if (this.root && !this.subnamespaces[namespace]) {
-				// TODO: do we need to bind??
 				this.subnamespaces[namespace] = Object.setPrototypeOf(
 					new Logger(namespace, this, this.root),
 					this.root.proto
@@ -118,16 +147,19 @@ class Logger extends Functionator {
 	applyFormat(msg: RawLogMessage) {
 		const { args, format, id, method, ns, style, ts } = msg;
 		const formatter = format || defaultFormatter;
-		return formatter({
-			args,
-			method,
-			ns,
-			style: {
-				...defaultStyles,
-				...style
+		return formatter(
+			{
+				args,
+				method,
+				ns,
+				style: {
+					...defaultStyles,
+					...style
+				},
+				ts
 			},
-			ts
-		});
+			ansiStyles
+		);
 	}
 
 	config(opts: LoggerOptions) {
@@ -190,7 +222,7 @@ class Logger extends Functionator {
 		return this.root?.isEnabled(this.ns) || false;
 	}
 
-	initMethod(method: string, props) {
+	initMethod(method: string) {
 		return (...args: unknown[]) => {
 			if (this.root) {
 				this.dispatch({
@@ -206,49 +238,49 @@ class Logger extends Functionator {
 
 	get log() {
 		if (!this.logMethods.log) {
-			this.logMethods.log = this.initMethod('log', {});
+			this.logMethods.log = this.initMethod('log');
 		}
 		return this.logMethods.log;
 	}
 
 	get trace() {
 		if (!this.logMethods.trace) {
-			this.logMethods.trace = this.initMethod('trace', {});
+			this.logMethods.trace = this.initMethod('trace');
 		}
 		return this.logMethods.trace;
 	}
 
 	get debug() {
 		if (!this.logMethods.debug) {
-			this.logMethods.debug = this.initMethod('debug', {});
+			this.logMethods.debug = this.initMethod('debug');
 		}
 		return this.logMethods.debug;
 	}
 
 	get info() {
 		if (!this.logMethods.info) {
-			this.logMethods.info = this.initMethod('info', {});
+			this.logMethods.info = this.initMethod('info');
 		}
 		return this.logMethods.info;
 	}
 
 	get warn() {
 		if (!this.logMethods.warn) {
-			this.logMethods.warn = this.initMethod('warn', {});
+			this.logMethods.warn = this.initMethod('warn');
 		}
 		return this.logMethods.warn;
 	}
 
 	get error() {
 		if (!this.logMethods.error) {
-			this.logMethods.error = this.initMethod('error', {});
+			this.logMethods.error = this.initMethod('error');
 		}
 		return this.logMethods.error;
 	}
 
 	get panic() {
 		if (!this.logMethods.panic) {
-			this.logMethods.panic = this.initMethod('panic', {});
+			this.logMethods.panic = this.initMethod('panic');
 		}
 		return this.logMethods.panic;
 	}
@@ -440,10 +472,13 @@ export class SnoopLogg extends Logger {
 	}
 }
 
-function defaultFormatter({ args, method, ns, style, ts }: LogMessage) {
-	const prefix = `${style.timestamp(ts)} ${
-		ns ? `${style.namespace(ns)} ` : ''
-	}${method && method !== 'log' ? `${style.method(method)} ` : ''}`;
+function defaultFormatter(
+	{ args, method, ns, style, ts }: LogMessage,
+	styles: AnsiStyles
+) {
+	const prefix = `${style.timestamp(ts, styles)} ${
+		ns ? `${style.namespace(ns, styles)} ` : ''
+	}${method && method !== 'log' ? `${style.method(method, styles)} ` : ''}`;
 
 	const formattedArgs = args.map(it =>
 		isJSON(it)
@@ -456,9 +491,16 @@ function defaultFormatter({ args, method, ns, style, ts }: LogMessage) {
 			: it
 	);
 
+	for (let i = 0, len = formattedArgs.length; i < len; i++) {
+		const arg = formattedArgs[i];
+		if (arg instanceof Error) {
+			formattedArgs[i] = style.error(arg, styles);
+		}
+	}
+
 	return format(...formattedArgs)
 		.split('\n')
-		.map(s => prefix + style.message(s, method))
+		.map(s => prefix + style.message(s, method, styles))
 		.join('\n');
 }
 

@@ -1,7 +1,6 @@
 import { EventEmitter } from 'node:events';
 import { SnoopLogg } from './snooplogg.js';
 
-export * from './closest-rgb.js';
 export * from './ns-to-rgb.js';
 
 if (!Object.getOwnPropertyDescriptor(globalThis, 'snooplogg')) {

@@ -1,6 +1,5 @@
 import { format } from 'node:util';
-import ansiStyles from 'ansi-styles';
-import snooplogg, { log, info } from '../dist/index.js';
+import snooplogg, { info, log } from '../dist/index.js';
 
 console.log('Welcome to SnoopLogg demo!\n');
 
@@ -53,6 +52,11 @@ snooplogg.config({
 });
 info('This is a custom message format');
 snooplogg.config({ format: null });
+
+log(`
+Logging errors is easy!
+  log(new SyntaxError('This is just a test'));`);
+log(new SyntaxError('This is just a test'));
 
 // const dispatcher = http('dispatcher');
 // const worker = snooplogg('worker');

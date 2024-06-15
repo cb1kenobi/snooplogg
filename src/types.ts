@@ -1,14 +1,19 @@
+import type ansiStyles from 'ansi-styles';
+
 export type SnoopLoggStyle = {
 	ns?: (ns: string) => string;
 };
 
-export type LogFormatter = (msg: LogMessage) => string;
+export type LogFormatter = (msg: LogMessage, styles: AnsiStyles) => string;
+
+export type AnsiStyles = typeof ansiStyles;
 
 export type FormatLogStyles = {
-	message: (msg: string, method: string) => string;
-	method: (name: string) => string;
-	namespace: (ns: string) => string;
-	timestamp: (ts: Date) => string;
+	error: (err: Error, styles: AnsiStyles) => string;
+	message: (msg: string, method: string, styles: AnsiStyles) => string;
+	method: (name: string, styles: AnsiStyles) => string;
+	namespace: (ns: string, styles: AnsiStyles) => string;
+	timestamp: (ts: Date, styles: AnsiStyles) => string;
 };
 
 export type LogStyles = Partial<FormatLogStyles>;

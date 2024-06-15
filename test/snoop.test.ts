@@ -21,34 +21,6 @@ describe('nsToRGB()', () => {
 	});
 });
 
-describe('closestRgb()', () => {
-	it('should get closest RGB color', () => {
-		const map = {
-			apple: 'brightCyan',
-			apricot: 'brightYellow',
-			banana: 'brightYellow',
-			blackberry: 'brightYellow',
-			blueberry: 'magenta',
-			cherry: 'brightRed',
-			coconut: 'blue',
-			grape: 'cyan',
-			kiwi: 'brightGreen',
-			mango: 'cyan',
-			orange: 'green',
-			peach: 'blue',
-			pear: 'brightYellow',
-			pineapple: 'yellow',
-			plum: 'brightYellow',
-			strawberry: 'brightYellow',
-			watermelon: 'green'
-		};
-
-		for (const [ns, color] of Object.entries(map)) {
-			expect(`${ns} -> ${closestRgb(nsToRgb(ns))}`).toBe(`${ns} -> ${color}`);
-		}
-	});
-});
-
 // it('should ?', async () => {
 // 	const { log, default: logger, panic } = await import('../src/index.js');
 // 	expect(log).toBeTypeOf('function');
