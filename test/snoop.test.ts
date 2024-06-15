@@ -10,7 +10,7 @@ import { closestRgb, nsToRgb } from '../src/index.js';
 // import { Console } from 'node:console';
 // import { Transform, Writable } from 'node:stream';
 
-describe('SnoopLogg', () => {});
+// describe('SnoopLogg', () => {});
 
 describe('nsToRGB()', () => {
 	it('should deterministically convert namespace to RGB color', () => {
