@@ -6,19 +6,19 @@ describe('NanoBuffer', () => {
 		expect(() => {
 			// biome-ignore lint/suspicious/noExplicitAny: Test case
 			new NanoBuffer('hi' as any);
-		}).to.throw(TypeError, 'Expected maxSize to be a number');
+		}).to.throw(TypeError, 'Expected max size to be a number');
 	});
 
 	it('should throw error if max size is not a number', () => {
 		expect(() => {
 			new NanoBuffer(Number.NaN);
-		}).to.throw(RangeError, 'Expected maxSize to be zero or greater');
+		}).to.throw(RangeError, 'Expected max size to be zero or greater');
 	});
 
 	it('should throw error if max size is negative', () => {
 		expect(() => {
 			new NanoBuffer(-123);
-		}).to.throw(RangeError, 'Expected maxSize to be zero or greater');
+		}).to.throw(RangeError, 'Expected max size to be zero or greater');
 	});
 
 	it('should get the max size', () => {
@@ -91,22 +91,22 @@ describe('NanoBuffer', () => {
 		expect(b.head).to.equal(0);
 	});
 
-	it('should throw error if invalid new max size', () => {
+	it('should throw error if invalid max size', () => {
 		expect(() => {
 			new NanoBuffer().maxSize = 'hi';
-		}).to.throw(TypeError, 'Expected new max size to be a number');
+		}).to.throw(TypeError, 'Expected max size to be a number');
 	});
 
-	it('should throw error if new max size is not a number', () => {
+	it('should throw error if max size is not a number', () => {
 		expect(() => {
 			new NanoBuffer().maxSize = Number.NaN;
-		}).to.throw(RangeError, 'Expected new max size to be zero or greater');
+		}).to.throw(RangeError, 'Expected max size to be zero or greater');
 	});
 
-	it('should throw error if new max size is negative', () => {
+	it('should throw error if max size is negative', () => {
 		expect(() => {
 			new NanoBuffer().maxSize = -123;
-		}).to.throw(RangeError, 'Expected new max size to be zero or greater');
+		}).to.throw(RangeError, 'Expected max size to be zero or greater');
 	});
 
 	it('should do nothing if max size is not changed', () => {

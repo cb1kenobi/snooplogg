@@ -24,7 +24,7 @@ export interface LoggerOptions {
 }
 
 export interface SnoopLoggOptions extends LoggerOptions {
-	maxBufferSize?: number;
+	historySize?: number;
 }
 
 interface BaseLogMessage {

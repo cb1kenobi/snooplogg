@@ -1,4 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
+import snooplogg, { SnoopLogg } from '../src/index.js';
 
 // import util from 'node:util';
 // import {
@@ -11,8 +12,53 @@ import { beforeAll, describe, expect, it } from 'vitest';
 // import { Transform, Writable } from 'node:stream';
 
 describe('SnoopLogg', () => {
-	it('should', () => {
-		//
+	describe('constructor()', () => {
+		it('should be instance of SnoopLogg', () => {
+			expect(snooplogg).toBeInstanceOf(Function);
+		});
+
+		it('should error if SnoopLogg options are invalid', () => {
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				new SnoopLogg('foo' as any);
+			}).toThrowError(new TypeError('Expected logger options to be an object'));
+		});
+	});
+
+	describe('config()', () => {
+		it('should error if config options are invalid', () => {
+			const instance = new SnoopLogg();
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				instance.config('foo' as any);
+			}).toThrowError(new TypeError('Expected logger options to be an object'));
+		});
+
+		it('should set the history size', () => {
+			const instance = new SnoopLogg();
+			expect(instance.history.maxSize).toBe(0);
+			instance.config({ historySize: 10 });
+			expect(instance.history.maxSize).toBe(10);
+		});
+
+		it('should error if history size is invalid', () => {
+			const instance = new SnoopLogg();
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				instance.config({ historySize: 'foo' } as any);
+			}).toThrowError(
+				new TypeError('Invalid history size: Expected max size to be a number')
+			);
+
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				instance.config({ historySize: -1 } as any);
+			}).toThrowError(
+				new RangeError(
+					'Invalid history size: Expected max size to be zero or greater'
+				)
+			);
+		});
 	});
 });
 
@@ -30,20 +76,6 @@ describe('SnoopLogg', () => {
 // 	beforeAll(() => {
 // 		// silence stdio
 // 		snooplogg.enable(null);
-// 	});
-
-// 	it('should be instance of SnoopLogg', () => {
-// 		expect(snooplogg).to.be.a('function');
-// 	});
-
-// 	it('should error if SnoopLogg options are invalid', () => {
-// 		expect(() => {
-// 			new SnoopLogg('foo');
-// 		}).to.throw(TypeError, 'Expected options to be an object');
-
-// 		expect(() => {
-// 			new SnoopLogg(null);
-// 		}).to.throw(TypeError, 'Expected options to be an object');
 // 	});
 
 // 	it('should update config', () => {

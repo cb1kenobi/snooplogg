@@ -29,11 +29,11 @@ export class NanoBuffer<T> {
 	 */
 	constructor(maxSize = 10) {
 		if (typeof maxSize !== 'number') {
-			throw new TypeError('Expected maxSize to be a number');
+			throw new TypeError('Expected max size to be a number');
 		}
 
 		if (Number.isNaN(maxSize) || maxSize < 0) {
-			throw new RangeError('Expected maxSize to be zero or greater');
+			throw new RangeError('Expected max size to be zero or greater');
 		}
 
 		this.buffer = Array(maxSize | 0);
@@ -68,11 +68,11 @@ export class NanoBuffer<T> {
 	 */
 	set maxSize(new_maxSize) {
 		if (typeof new_maxSize !== 'number') {
-			throw new TypeError('Expected new max size to be a number');
+			throw new TypeError('Expected max size to be a number');
 		}
 
 		if (Number.isNaN(new_maxSize) || new_maxSize < 0) {
-			throw new RangeError('Expected new max size to be zero or greater');
+			throw new RangeError('Expected max size to be zero or greater');
 		}
 
 		if (new_maxSize === this._maxSize) {

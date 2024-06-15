@@ -320,15 +320,15 @@ export class SnoopLogg extends Logger {
 	config(opts: SnoopLoggOptions = {}) {
 		super.config(opts);
 
-		if (opts.maxBufferSize !== undefined) {
+		if (opts.historySize !== undefined) {
 			try {
-				this.history.maxSize = opts.maxBufferSize;
+				this.history.maxSize = opts.historySize;
 			} catch (err: unknown) {
 				if (err instanceof TypeError) {
-					throw new TypeError(`Invalid max buffer size: ${err.message}`);
+					throw new TypeError(`Invalid history size: ${err.message}`);
 				}
 				if (err instanceof RangeError) {
-					throw new RangeError(`Invalid max buffer size: ${err.message}`);
+					throw new RangeError(`Invalid history size: ${err.message}`);
 				}
 				throw err;
 			}
