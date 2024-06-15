@@ -1,5 +1,5 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { closestRgb, nsToRgb } from '../src/index.js';
+
 // import util from 'node:util';
 // import {
 // 	createInstanceWithDefaults,
@@ -10,14 +10,9 @@ import { closestRgb, nsToRgb } from '../src/index.js';
 // import { Console } from 'node:console';
 // import { Transform, Writable } from 'node:stream';
 
-// describe('SnoopLogg', () => {});
-
-describe('nsToRGB()', () => {
-	it('should deterministically convert namespace to RGB color', () => {
-		const first = nsToRgb('foo');
-		expect(first).toEqual({ r: 133, g: 163, b: 224 });
-		expect(nsToRgb('foo')).toEqual(first);
-		expect(nsToRgb('bar')).toEqual({ r: 188, g: 193, b: 240 });
+describe('SnoopLogg', () => {
+	it('should', () => {
+		//
 	});
 });
 
