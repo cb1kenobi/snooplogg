@@ -26,7 +26,7 @@ describe('NanoBuffer', () => {
 	});
 
 	it('should add an object', () => {
-		const b = new NanoBuffer();
+		const b = new NanoBuffer(10);
 		expect(b.size).to.equal(0);
 		b.push('foo');
 		expect(b.size).to.equal(1);

@@ -27,7 +27,7 @@ export class NanoBuffer<T> {
 	 *
 	 * @param [maxSize=10] - The initial buffer size.
 	 */
-	constructor(maxSize = 10) {
+	constructor(maxSize = 0) {
 		if (typeof maxSize !== 'number') {
 			throw new TypeError('Expected max size to be a number');
 		}

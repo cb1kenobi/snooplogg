@@ -1,4 +1,5 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { WritableStream } from 'memory-streams';
+import { describe, expect, it } from 'vitest';
 import snooplogg, { SnoopLogg } from '../src/index.js';
 
 // import util from 'node:util';
@@ -10,6 +11,12 @@ import snooplogg, { SnoopLogg } from '../src/index.js';
 // } from '../src/index.js';
 // import { Console } from 'node:console';
 // import { Transform, Writable } from 'node:stream';
+
+const pattern = [
+	'[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\\u0007)',
+	'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))'
+].join('|');
+const stripRegExp = new RegExp(pattern, 'g');
 
 describe('SnoopLogg', () => {
 	describe('constructor()', () => {
@@ -33,7 +40,223 @@ describe('SnoopLogg', () => {
 				instance.config('foo' as any);
 			}).toThrowError(new TypeError('Expected logger options to be an object'));
 		});
+	});
 
+	describe('logging', () => {
+		it('should write log messages to the specified stream', () => {
+			const methods = [
+				'log',
+				'trace',
+				'debug',
+				'info',
+				'warn',
+				'error',
+				'panic'
+			];
+
+			for (const method of methods) {
+				const prefix = `\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}\\.\\d{3} ${method === 'log' ? '' : method.toUpperCase().padEnd(6)}`;
+				const testCases = [
+					{
+						input: [`This is a test "${method}" message`],
+						expected: new RegExp(
+							`^${prefix}This is a test "${method}" message$`
+						)
+					},
+					{
+						input: [
+							'This string uses format to display %s and %d',
+							'this string',
+							3.14
+						],
+						expected: new RegExp(
+							`^${prefix}This string uses format to display this string and 3.14$`
+						)
+					},
+					{
+						input: ['This is a multiline\nstring'],
+						expected: new RegExp(
+							`^${prefix}This is a multiline\n${prefix}string$`,
+							'm'
+						)
+					},
+					{
+						input: [3.14],
+						expected: new RegExp(`^${prefix}3.14$`)
+					},
+					{
+						input: [new Error('This is an error')],
+						expected: new RegExp(`^${prefix}Error: This is an error`)
+					},
+					{
+						input: [{ foo: 'bar', colors: ['red', 'green', 'blue'] }],
+						expected: new RegExp(
+							`^${prefix}{\n${prefix}  foo: 'bar',\n${prefix}  colors: \\[\n${prefix}    'red',\n${prefix}    'green',\n${prefix}    'blue'\n${prefix}  \\]\n${prefix}}$`,
+							'm'
+						)
+					}
+				];
+
+				for (const { input, expected } of testCases) {
+					const out = new WritableStream();
+					const instance = new SnoopLogg().enable('*').pipe(out);
+					instance[method](...input);
+					const output = out.toString().trim().replace(stripRegExp, '');
+					expect(output).toMatch(expected);
+				}
+			}
+		});
+	});
+
+	describe('enable / isEnabled', () => {
+		it('should error if enable filter is invalid', () => {
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				new SnoopLogg().enable(123 as any);
+			}).toThrowError(
+				new TypeError('Expected pattern to be a string or regex')
+			);
+		});
+
+		it('should test if a logger is enabled', () => {
+			const instance = new SnoopLogg();
+
+			instance.enable('foo');
+			expect(instance.isEnabled('foo')).toBe(true);
+			expect(instance.isEnabled('bar')).toBe(false);
+			// biome-ignore lint/suspicious/noExplicitAny: Test case
+			expect(instance.isEnabled(undefined as any)).toBe(true);
+
+			instance.enable('*');
+			expect(instance.isEnabled('foo')).toBe(true);
+			expect(instance.isEnabled('bar')).toBe(true);
+			// biome-ignore lint/suspicious/noExplicitAny: Test case
+			expect(instance.isEnabled(undefined as any)).toBe(true);
+
+			instance.enable();
+			expect(instance.isEnabled('foo')).toBe(false);
+
+			instance.enable(/^foo/);
+			expect(instance.isEnabled('foo')).toBe(true);
+			expect(instance.isEnabled('foobar')).toBe(true);
+			expect(instance.isEnabled('barfoo')).toBe(false);
+
+			instance.enable('foo,bar');
+			expect(instance.isEnabled('foo')).toBe(true);
+			expect(instance.isEnabled('bar')).toBe(true);
+			expect(instance.isEnabled('baz')).toBe(false);
+
+			instance.enable('foo,-bar');
+			expect(instance.isEnabled('foo')).toBe(true);
+			expect(instance.isEnabled('bar')).toBe(false);
+
+			instance.enable('');
+			expect(instance.isEnabled('foo')).toBe(false);
+		});
+	});
+
+	describe('pipe / unpipe', () => {
+		it('should error if pipe stream is invalid', () => {
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				new SnoopLogg().pipe('foo' as any);
+			}).toThrowError(new TypeError('Invalid stream'));
+		});
+
+		it('should only add the pipe stream once', () => {
+			const out = new WritableStream();
+			const instance = new SnoopLogg().enable('*').pipe(out).pipe(out);
+			expect(instance.streams.size).toBe(1);
+			instance.log('foo');
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
+				/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} foo$/
+			);
+		});
+
+		it('should unpipe a stream', () => {
+			const out = new WritableStream();
+			const instance = new SnoopLogg().enable('*').pipe(out);
+			instance.log('foo');
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
+				/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} foo$/
+			);
+			instance.unpipe(out);
+			instance.log('bar');
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
+				/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} foo$/
+			);
+		});
+
+		it('should error if unpipe stream is invalid', () => {
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				new SnoopLogg().unpipe('foo' as any);
+			}).toThrowError(new TypeError('Invalid stream'));
+		});
+	});
+
+	describe('format', () => {
+		it('should error if format function is invalid', () => {
+			const instance = new SnoopLogg();
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				instance.config({ format: 'foo' } as any);
+			}).toThrowError(new TypeError('Expected format to be a function'));
+		});
+
+		it('should apply a custom format', () => {
+			const out = new WritableStream();
+			const instance = new SnoopLogg({
+				format(msg) {
+					return `${String(msg.args[0]).toUpperCase()}`;
+				}
+			})
+				.enable('*')
+				.pipe(out);
+			instance.log('foo');
+			const output = out.toString().trim().replace(stripRegExp, '');
+			expect(output).toBe('FOO');
+		});
+	});
+
+	describe('style', () => {
+		it('should error if style is invalid', () => {
+			const instance = new SnoopLogg();
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				instance.config({ style: 'foo' } as any);
+			}).toThrowError(new TypeError('Expected style to be an object'));
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				instance.config({ style: { error: 'foo' as any } });
+			}).toThrowError(new TypeError('Expected "error" style to be a function'));
+		});
+
+		it('should apply a custom format', () => {
+			const out = new WritableStream();
+			const instance = new SnoopLogg({
+				style: {
+					method(name) {
+						return `[${name}]`;
+					},
+					timestamp() {
+						return '>>>';
+					}
+				}
+			})
+				.enable('*')
+				.pipe(out);
+			instance.info('foo');
+			const output = out.toString().trim().replace(stripRegExp, '');
+			expect(output).toBe('>>> [info] foo');
+		});
+	});
+
+	// nested logger
+
+	// filtering enable()
+
+	describe('history', () => {
 		it('should set the history size', () => {
 			const instance = new SnoopLogg();
 			expect(instance.history.maxSize).toBe(0);
@@ -59,295 +282,30 @@ describe('SnoopLogg', () => {
 				)
 			);
 		});
+
+		it('should flush the history to a piped stream', () => {
+			const instance = new SnoopLogg().config({ historySize: 10 }).enable('*');
+			instance.log('foo');
+
+			const out = new WritableStream();
+			instance.pipe(out, { flush: true });
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
+				/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} foo$/
+			);
+		});
+	});
+
+	describe('snoop / unsnoop', () => {
+		it('should error if namespace is invalid', () => {
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				new SnoopLogg().snoop(123 as any);
+			}).toThrowError(
+				new TypeError('Expected namespace prefix to be a string')
+			);
+		});
 	});
 });
-
-// it('should ?', async () => {
-// 	const { log, default: logger, panic } = await import('../src/index.js');
-// 	expect(log).toBeTypeOf('function');
-// 	log('hi');
-// 	logger.error('shibby');
-// 	panic('oh no');
-
-// 	const { log: nestedLog } = logger('shibby');
-// 	nestedLog('howdy');
-// });
-
-// 	beforeAll(() => {
-// 		// silence stdio
-// 		snooplogg.enable(null);
-// 	});
-
-// 	it('should update config', () => {
-// 		const instance = createInstanceWithDefaults();
-
-// 		instance.config();
-
-// 		expect(() => {
-// 			instance.config('foo');
-// 		}).to.throw(TypeError, 'Expected config options to be an object');
-
-// 		expect(() => {
-// 			instance.config({
-// 				colors: 123
-// 			});
-// 		}).to.throw(TypeError, 'Expected colors to be a string or array');
-
-// 		instance.config({
-// 			colors: 'red,blue'
-// 		});
-
-// 		instance.config({
-// 			colors: [ 'green', 'yellow' ]
-// 		});
-
-// 		expect(() => {
-// 			instance.config({
-// 				inspectOptions: 'foo'
-// 			});
-// 		}).to.throw(TypeError, 'Expected inspect options to be an object');
-
-// 		expect(() => {
-// 			instance.config({
-// 				minBrightness: 'foo'
-// 			});
-// 		}).to.throw(TypeError, 'Expected minimum brightness to be a number');
-
-// 		expect(() => {
-// 			instance.config({
-// 				minBrightness: -1
-// 			});
-// 		}).to.throw(RangeError, 'Minimum brightness must be between 0 and 255');
-
-// 		expect(() => {
-// 			instance.config({
-// 				minBrightness: 666
-// 			});
-// 		}).to.throw(RangeError, 'Minimum brightness must be between 0 and 255');
-
-// 		expect(() => {
-// 			instance.config({
-// 				maxBrightness: 'foo'
-// 			});
-// 		}).to.throw(TypeError, 'Expected maximum brightness to be a number');
-
-// 		expect(() => {
-// 			instance.config({
-// 				maxBrightness: -1
-// 			});
-// 		}).to.throw(RangeError, 'Maximum brightness must be between 0 and 255');
-
-// 		expect(() => {
-// 			instance.config({
-// 				maxBrightness: 666
-// 			});
-// 		}).to.throw(RangeError, 'Maximum brightness must be between 0 and 255');
-
-// 		expect(() => {
-// 			instance.config({
-// 				minBrightness: 100,
-// 				maxBrightness: 50
-// 			});
-// 		}).to.throw(RangeError, 'Maximum brightness must greater than or equal to the minimum brightness');
-
-// 		expect(() => {
-// 			instance.config({
-// 				theme: 123
-// 			});
-// 		}).to.throw(TypeError, 'Expected theme to be a string');
-
-// 		instance.config({
-// 			theme: 'foo'
-// 		});
-
-// 		expect(() => {
-// 			instance.config({
-// 				maxBufferSize: 'hi'
-// 			});
-// 		}).to.throw(TypeError, 'Invalid max buffer size: Expected new max size to be a number');
-
-// 		expect(() => {
-// 			instance.config({
-// 				maxBufferSize: NaN
-// 			});
-// 		}).to.throw(RangeError, 'Invalid max buffer size: Expected new max size to be zero or greater');
-
-// 		expect(() => {
-// 			instance.config({
-// 				maxBufferSize: -123
-// 			});
-// 		}).to.throw(RangeError, 'Invalid max buffer size: Expected new max size to be zero or greater');
-// 	});
-
-// 	it('should log to stream', () => {
-// 		class MockOutputStream extends Writable {
-// 			_write(msg, enc, cb) {
-// 				try {
-// 					expect(msg).to.be.instanceof(Buffer);
-// 					expect(msg.toString()).to.equal('log() test\n');
-// 					cb();
-// 				} catch (e) {
-// 					cb(e);
-// 				}
-// 			}
-// 		}
-
-// 		createInstanceWithDefaults()
-// 			.config({ theme: 'minimal' })
-// 			.enable('*')
-// 			.pipe(new MockOutputStream)
-// 			.log('log() test');
-// 	});
-
-// 	it('should output log types', () => {
-// 		const types = [ 'trace','debug', 'info', 'warn', 'error', 'fatal' ];
-// 		const expected = [
-// 			/^\u001b\[90mtrace\u001b\[39m Trace: trace\(\) test\n/,
-// 			'\u001b[35mdebug\u001b[39m debug() test\n',
-// 			'\u001b[32minfo\u001b[39m info() test\n',
-// 			'\u001b[33mwarn\u001b[39m warn() test\n',
-// 			'\u001b[31merror\u001b[39m error() test\n',
-// 			'\u001b[41m\u001b[37mfatal\u001b[39m\u001b[49m fatal() test\n'
-// 		];
-// 		let i = 0;
-
-// 		class MockOutputStream extends Writable {
-// 			_write(msg, enc, cb) {
-// 				try {
-// 					expect(msg).to.be.instanceof(Buffer);
-// 					const value = expected[i++];
-// 					if (value instanceof RegExp) {
-// 						expect(msg.toString()).to.match(value);
-// 					} else {
-// 						expect(msg.toString()).to.equal(value);
-// 					}
-// 					cb();
-// 				} catch (e) {
-// 					cb(e);
-// 				}
-// 			}
-// 		}
-
-// 		const inst = createInstanceWithDefaults()
-// 			.config({ theme: 'standard' })
-// 			.enable('*')
-// 			.pipe(new MockOutputStream);
-
-// 		for (const type of types) {
-// 			inst[type](`${type}() test`);
-// 		}
-// 	});
-
-// 	it('should log errors with stacktraces', () => {
-// 		class MockOutputStream extends Writable {
-// 			_write(msg, enc, cb) {
-// 				try {
-// 					expect(msg).to.be.instanceof(Buffer);
-// 					expect(msg.toString()).to.match(/Error: Oh no/);
-// 					cb();
-// 				} catch (e) {
-// 					cb(e);
-// 				}
-// 			}
-// 		}
-
-// 		createInstanceWithDefaults()
-// 			.config({ theme: 'minimal' })
-// 			.enable('*')
-// 			.pipe(new MockOutputStream)
-// 			.log(new Error('Oh no'));
-// 	});
-
-// 	it('should log with namespaced logger', () => {
-// 		class MockOutputStream extends Writable {
-// 			_write(msg, enc, cb) {
-// 				try {
-// 					expect(msg).to.be.instanceof(Buffer);
-// 					expect(msg.toString()).to.equal('foo log() test\n');
-// 					cb();
-// 				} catch (e) {
-// 					cb(e);
-// 				}
-// 			}
-// 		}
-
-// 		const out = new StripColors;
-// 		out.pipe(new MockOutputStream);
-
-// 		const instance = createInstanceWithDefaults()
-// 			.config({
-// 				colors: [ 'blue', 'cyan', 'green', 'magenta', 'red', 'yellow' ],
-// 				theme: 'standard'
-// 			})
-// 			.enable('*')
-// 			.pipe(out);
-
-// 		const fooLogger = instance('foo');
-
-// 		fooLogger.log('log() test');
-// 	});
-
-// 	it('should log with nested namespaced logger', () => {
-// 		class MockOutputStream extends Writable {
-// 			_write(msg, enc, cb) {
-// 				try {
-// 					expect(msg).to.be.instanceof(Buffer);
-// 					expect(msg.toString()).to.equal('foo:bar log() test\n');
-// 					cb();
-// 				} catch (e) {
-// 					cb(e);
-// 				}
-// 			}
-// 		}
-
-// 		const out = new StripColors;
-// 		out.pipe(new MockOutputStream);
-
-// 		const instance = createInstanceWithDefaults()
-// 			.config({
-// 				colors: [ 'blue', 'cyan', 'green', 'magenta', 'red', 'yellow' ],
-// 				theme: 'standard'
-// 			})
-// 			.enable('*')
-// 			.pipe(out);
-
-// 		const fooLogger = instance('foo');
-// 		const barLogger = fooLogger('bar');
-
-// 		barLogger.log('log() test');
-
-// 		expect(fooLogger.namespace).to.equal('foo');
-// 		expect(barLogger.namespace).to.equal('foo:bar');
-// 	});
-
-// 	it('should get logger namespace', () => {
-// 		const instance = createInstanceWithDefaults();
-// 		const fooLogger = instance('foo');
-// 		const barLogger = fooLogger('bar');
-
-// 		expect(instance.namespace).to.be.null;
-// 		expect(fooLogger.namespace).to.equal('foo');
-// 		expect(barLogger.namespace).to.equal('foo:bar');
-// 	});
-
-// 	it('should cache namespace loggers', () => {
-// 		const instance = createInstanceWithDefaults();
-
-// 		const fooLogger = instance('foo');
-// 		expect(fooLogger).to.equal(instance('foo'));
-// 		expect(fooLogger).to.equal(instance.ns('foo'));
-
-// 		const barLogger = fooLogger('bar');
-// 		expect(barLogger).to.equal(fooLogger('bar'));
-// 	});
-
-// 	it('should throw error when trying to enable bad patterns', () => {
-// 		const instance = createInstanceWithDefaults();
-
-// 		expect(() => {
-// 			instance.enable(123);
-// 		}).to.throw(TypeError, 'Expected pattern to be a string or regex');
-// 	});
 
 // 	it('should filter messages', () => {
 // 		let count = 0;
@@ -442,125 +400,6 @@ describe('SnoopLogg', () => {
 // 		fooLogger.log('foo log() test');
 // 		barLogger.log('bar log() test');
 // 		expect(count).to.equal(3);
-// 	});
-
-// 	it('should expose colors api', () => {
-// 		const instance = createInstanceWithDefaults();
-// 		expect(instance.chalk.red).to.be.a('function');
-// 	});
-
-// 	it('should use a custom theme', () => {
-// 		class MockOutputStream extends Writable {
-// 			_write(msg, enc, cb) {
-// 				try {
-// 					expect(msg).to.be.instanceof(Buffer);
-// 					expect(msg.toString()).to.equal('**FOO** themes rock\n');
-// 					cb();
-// 				} catch (e) {
-// 					cb(e);
-// 				}
-// 			}
-// 		}
-
-// 		const instance = createInstanceWithDefaults()
-// 			.theme('foo', function (msg) {
-// 				return `**FOO** ${util.format.apply(null, msg.args)}\n`;
-// 			})
-// 			.config({ theme: 'foo' })
-// 			.enable('*')
-// 			.pipe(new MockOutputStream)
-// 			.log('themes rock');
-
-// 		expect(() => {
-// 			instance.theme();
-// 		}).to.throw(TypeError, 'Expected name to be a string');
-
-// 		expect(() => {
-// 			instance.theme(123);
-// 		}).to.throw(TypeError, 'Expected name to be a string');
-
-// 		expect(() => {
-// 			instance.theme('bar');
-// 		}).to.throw(TypeError, 'Expected fn to be a function');
-
-// 		expect(() => {
-// 			instance.theme('bar', 'baz');
-// 		}).to.throw(TypeError, 'Expected fn to be a function');
-// 	});
-
-// 	it('should use a custom theme for a specific piped stream', () => {
-// 		class MockMinimalOutputStream extends Writable {
-// 			_write(msg, enc, cb) {
-// 				try {
-// 					expect(msg).to.be.instanceof(Buffer);
-// 					expect(msg.toString()).to.equal('themes rock\n');
-// 					cb();
-// 				} catch (e) {
-// 					cb(e);
-// 				}
-// 			}
-// 		}
-
-// 		class MockFooOutputStream extends Writable {
-// 			_write(msg, enc, cb) {
-// 				try {
-// 					expect(msg).to.be.instanceof(Buffer);
-// 					expect(msg.toString()).to.equal('**FOO** themes rock\n');
-// 					cb();
-// 				} catch (e) {
-// 					cb(e);
-// 				}
-// 			}
-// 		}
-
-// 		createInstanceWithDefaults()
-// 			.theme('foo', function (msg) {
-// 				return `**FOO** ${util.format.apply(null, msg.args)}\n`;
-// 			})
-// 			.config({ theme: 'minimal' })
-// 			.enable('*')
-// 			.pipe(new MockMinimalOutputStream)
-// 			.pipe(new MockFooOutputStream, { theme: 'foo' })
-// 			.log('themes rock');
-// 	});
-
-// 	it('should styles to text', () => {
-// 		const instance = createInstanceWithDefaults()
-// 			.config({
-// 				colors: [ 'blue', 'cyan', 'green', 'magenta', 'red', 'yellow' ]
-// 			})
-// 			.style('reverse', s => s.split('').reverse().join(''));
-
-// 		expect(instance.styles.red('hello')).to.equal('\u001b[31mhello\u001b[39m');
-
-// 		expect(instance.styles.uppercase('HeLlO')).to.equal('HELLO');
-// 		expect(instance.styles.lowercase('HeLlO')).to.equal('hello');
-// 		expect(instance.styles.bracket('hello')).to.equal('[hello]');
-// 		expect(instance.styles.paren('hello')).to.equal('(hello)');
-// 		expect(instance.styles.auto('hello')).to.equal('\u001b[31mhello\u001b[39m');
-
-// 		expect(instance.styles.reverse('HeLlO')).to.equal('OlLeH');
-
-// 		expect(instance.applyStyle('uppercase,reverse', 'HeLlO')).to.equal('OLLEH');
-// 		expect(instance.applyStyle('uppercase,red,bold', 'HeLlO')).to.equal('\u001b[1m\u001b[31mHELLO\u001b[39m\u001b[22m');
-
-// 		expect(instance.applyStyle('foo', 'HeLlO')).to.equal('HeLlO');
-
-// 		expect(() => {
-// 			instance.style();
-// 		}).to.throw(TypeError, 'Expected name to be a string');
-
-// 		expect(() => {
-// 			instance.style(123);
-// 		}).to.throw(TypeError, 'Expected name to be a string');
-
-// 		expect(() => {
-// 			instance.style('bar');
-// 		}).to.throw(TypeError, 'Expected fn to be a function');
-
-// 		expect(() => {
-// 			instance.style('bar', 'baz');
-// 		}).to.throw(TypeError, 'Expected fn to be a function');
 // 	});
 
 // 	it('should emit messages even if not enabled', () => {

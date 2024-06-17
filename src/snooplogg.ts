@@ -1,4 +1,4 @@
-import { Writable } from 'node:stream';
+import type { Writable } from 'node:stream';
 import { format, inspect } from 'node:util';
 import ansiStyles from 'ansi-styles';
 import { NanoBuffer } from './nanobuffer.js';
@@ -20,7 +20,6 @@ import type {
  * - [ ] Add JSDoc comments
  * - [ ] Finish demo (snoop, nested logger styles)
  * - [ ] Add tests/coverage
- * - [ ] Fix pipe()
  * - [ ] Update readme
  * - [ ] Test Deno
  * - [ ] Test Bun
@@ -176,6 +175,13 @@ class Logger extends Functionator {
 			if (typeof opts.style !== 'object') {
 				throw new TypeError('Expected style to be an object');
 			}
+			if (opts.style) {
+				for (const [type, fn] of Object.entries(opts.style)) {
+					if (defaultStyles[type] && typeof fn !== 'function') {
+						throw new TypeError(`Expected "${type}" style to be a function`);
+					}
+				}
+			}
 			this.style = opts.style;
 		}
 	}
@@ -288,9 +294,7 @@ class Logger extends Functionator {
 
 export class SnoopLogg extends Logger {
 	allow: string | RegExp | null = null;
-	history: NanoBuffer<RawLogMessage> = new NanoBuffer(
-		parseUnsignedInt(process.env.SNOOPLOGG_MAX_BUFFER_SIZE)
-	);
+	history: NanoBuffer<RawLogMessage> = new NanoBuffer();
 	ignore: RegExp | null = null;
 	onSnoopMessage: ((msg: RawLogMessage) => void) | null = null;
 	proto: SnoopLogg | null = null;
@@ -324,11 +328,9 @@ export class SnoopLogg extends Logger {
 			try {
 				this.history.maxSize = opts.historySize;
 			} catch (err: unknown) {
-				if (err instanceof TypeError) {
-					throw new TypeError(`Invalid history size: ${err.message}`);
-				}
-				if (err instanceof RangeError) {
-					throw new RangeError(`Invalid history size: ${err.message}`);
+				if (err instanceof Error) {
+					err.message = `Invalid history size: ${err.message}`;
+					err.stack = `${err.toString()}${err.stack?.substring(err.stack.indexOf('\n')) || ''}`;
 				}
 				throw err;
 			}
@@ -362,7 +364,7 @@ export class SnoopLogg extends Logger {
 				}
 			}
 
-			allow = allows.length ? new RegExp(`^(${allows.join('|')})$`) : /./;
+			allow = new RegExp(`^(${allows.join('|')})$`);
 
 			if (ignores.length) {
 				ignore = new RegExp(`^(${ignores.join('|')})$`);
@@ -399,7 +401,7 @@ export class SnoopLogg extends Logger {
 	}
 
 	pipe(stream: Writable, opts: { flush?: boolean } = {}) {
-		if (!stream || !(stream instanceof Writable)) {
+		if (!stream || typeof stream.write !== 'function') {
 			throw new TypeError('Invalid stream');
 		}
 
@@ -413,13 +415,13 @@ export class SnoopLogg extends Logger {
 
 		if (opts.flush) {
 			for (const msg of this.history) {
-				// if (
-				// 	msg &&
-				// 	((msg.id === this.id && msg.enabled) ||
-				// 		(msg.id !== this.id && this.isEnabled(msg.ns)))
-				// ) {
-				// 	// TODO: write to stream
-				// }
+				if (msg && this.isEnabled(msg.ns)) {
+					for (const stream of this.streams.keys()) {
+						stream.write(
+							stream.writableObjectMode ? msg : `${this.applyFormat(msg)}\n`
+						);
+					}
+				}
 			}
 		}
 
@@ -427,7 +429,7 @@ export class SnoopLogg extends Logger {
 	}
 
 	unpipe(stream: Writable) {
-		if (!stream || !(stream instanceof Writable)) {
+		if (!stream || typeof stream.write !== 'function') {
 			throw new TypeError('Invalid stream');
 		}
 
@@ -439,7 +441,7 @@ export class SnoopLogg extends Logger {
 	}
 
 	snoop(nsPrefix: string) {
-		if (typeof nsPrefix !== 'string') {
+		if (nsPrefix !== undefined && typeof nsPrefix !== 'string') {
 			throw new TypeError('Expected namespace prefix to be a string');
 		}
 
@@ -502,14 +504,6 @@ function defaultFormatter(
 		.split('\n')
 		.map(s => prefix + style.message(s, method, styles))
 		.join('\n');
-}
-
-function parseUnsignedInt(value: string | number | undefined): number {
-	return value === undefined
-		? 0
-		: typeof value === 'number'
-			? value
-			: Math.max(0, Number.parseInt(value, 10));
 }
 
 function isJSON(it: unknown): boolean {

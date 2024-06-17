@@ -1,6 +1,6 @@
 # SnoopLogg
 
-Laid back debug logging.
+Laid back debug logging for Node.js and Bun.
 
 ## Installation
 

@@ -9,6 +9,7 @@ export default defineConfig({
 		environment: 'node',
 		globals: false,
 		include: ['test/**/*.test.ts'],
+		silent: false,
 		watch: false
 	}
 });
