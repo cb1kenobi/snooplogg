@@ -1,7 +1,9 @@
 import { EventEmitter } from 'node:events';
 import { SnoopLogg } from './snooplogg.js';
 
-export { SnoopLogg };
+export * from './is-json.js';
+export * from './ns-to-rgb.js';
+export * from './snooplogg.js';
 
 if (!Object.getOwnPropertyDescriptor(globalThis, 'snooplogg')) {
 	Object.defineProperty(globalThis, 'snooplogg', { value: new EventEmitter() });
@@ -20,5 +22,3 @@ export const error = instance.error.bind(instance);
 export const panic = instance.panic.bind(instance);
 
 export default instance;
-
-export * from './ns-to-rgb.js';

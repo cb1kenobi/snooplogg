@@ -20,12 +20,9 @@ export type FormatLogElements = {
 
 export type LogElements = Partial<FormatLogElements>;
 
-export interface LoggerConfig {
-	format?: LogFormatter | null;
+export interface SnoopLoggConfig {
 	elements?: LogElements;
-}
-
-export interface SnoopLoggConfig extends LoggerConfig {
+	format?: LogFormatter | null;
 	historySize?: number;
 }
 
@@ -47,10 +44,6 @@ export interface RawLogMessage extends BaseLogMessage {
 	elements: LogElements;
 	uptime: number;
 }
-
-export type SnoopLoggStreamMeta = {
-	onEnd: () => void;
-};
 
 export type Color = {
 	r: number;

@@ -20,27 +20,6 @@ describe('SnoopLogg', () => {
 				new SnoopLogg('foo' as any);
 			}).toThrowError(new TypeError('Expected logger options to be an object'));
 		});
-
-		it('should not clobber instance specific prototypes', () => {
-			const logger1 = new SnoopLogg();
-
-			// @ts-expect-error protoId is a hidden property
-			expect(logger1.id).toBe(logger1.protoId);
-
-			const logger2 = new SnoopLogg();
-
-			// @ts-expect-error protoId is a hidden property
-			expect(logger1.id).toBe(logger1.protoId);
-
-			// @ts-expect-error protoId is a hidden property
-			expect(logger2.id).toBe(logger2.protoId);
-
-			const logger1ns = logger1('foo');
-
-			// @ts-expect-error protoId is a hidden property
-			expect(logger1ns.root.id).toBe(logger1.protoId);
-			expect(logger1ns.root.protoId).toBe(logger1ns.protoId);
-		});
 	});
 
 	describe('config()', () => {
@@ -231,28 +210,22 @@ describe('SnoopLogg', () => {
 			);
 		});
 
-		// it.only('should', () => {
-		// 	const out = new WritableStream();
-		// 	const instance = new SnoopLogg({
-		// 		format(msg) {
-		// 			return `ROOT ${String(msg.args[0]).toUpperCase()}`;
-		// 		}
-		// 	})
-		// 		.enable('*')
-		// 		.pipe(out);
+		it('should inherit parent formatter', () => {
+			const out = new WritableStream();
+			const instance = new SnoopLogg({
+				format(msg) {
+					return `ROOT ${String(msg.args[0]).toUpperCase()}`;
+				}
+			})
+				.enable('*')
+				.pipe(out);
 
-		// 	const foo = instance('foo')
-		// 		.config({
-		// 			format(msg) {
-		// 				return `FOO ${String(msg.args[0]).toLowerCase()}`;
-		// 			}
-		// 		});
-
-		// 	instance.log('bar');
-		// 	foo.log('bar');
-		// 	const output = out.toString().trim().replace(stripRegExp, '');
-		// 	console.log(output);
-		// });
+			const foo = instance('foo');
+			instance.log('bar');
+			foo.log('baz');
+			const output = out.toString().trim().replace(stripRegExp, '');
+			expect(output).toBe('ROOT BAR\nROOT BAZ');
+		});
 	});
 
 	describe('elements', () => {
@@ -293,16 +266,9 @@ describe('SnoopLogg', () => {
 	describe('nested loggers', () => {
 		it('should create a nested logger', () => {
 			const out = new WritableStream();
-			const instance = new SnoopLogg().pipe(out);
+			const instance = new SnoopLogg().enable('*').pipe(out);
 			const foo = instance('foo');
 			const bar = foo('bar');
-
-			expect(foo.enabled).toBe(false);
-			expect(bar.enabled).toBe(false);
-			instance.enable('*');
-			expect(foo.enabled).toBe(true);
-			expect(bar.enabled).toBe(true);
-
 			bar.log('baz');
 			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
 				/^\s*\d\.\d{3}s foo:bar baz$/

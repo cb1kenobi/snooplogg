@@ -1,9 +1,9 @@
 {
   "name": "snooplogg",
-  "version": "6.0.0",
+  "version": "6.0.0-rc.0",
   "description": "Your mind on your logs and your logs on your mind",
   "type": "module",
-  "exports": "./src/index.js",
+  "exports": "./dist/index.js",
   "author": "Chris Barber <chris@cb1inc.com> (https://github.com/cb1kenobi)",
   "license": "MIT",
   "keywords": [
@@ -29,14 +29,14 @@
     "lint": "biome lint --write .",
     "prepublishOnly": "pnpm run build",
     "test": "vitest",
-    "test-no-tty": "node -e \"try { console.log(require('child_process').execSync('pnpm test').toString()); } catch (e) { console.log(e, e.stdout.toString()); console.log(e.stderr.toString()); }\"",
+    "test-no-tty": "node -e \"try { console.log(require('child_process').execSync('pnpm coverage').toString()); } catch (e) { console.log(e, e.stdout.toString()); console.log(e.stderr.toString()); }\"",
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
     "@biomejs/biome": "1.8.1",
     "@rollup/plugin-node-resolve": "15.2.3",
     "@rollup/plugin-typescript": "11.1.6",
-    "@types/node": "20.14.2",
+    "@types/node": "20.14.4",
     "@vitest/coverage-v8": "1.6.0",
     "ansi-styles": "6.2.1",
     "esbuild": "0.21.5",

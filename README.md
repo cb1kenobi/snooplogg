@@ -1,12 +1,12 @@
-# SnoopLogg
+<br>
+<div align="center">
+	<img width="640" height="240" src=".github/SnoopLogg.webp" alt="SnoopLogg">
+</div>
+<br>
 
-Laid back debug logging for Node.js and Bun.
-
-## Installation
-
-    npm install snooplogg
-
-![snooplogg](demo/screenshot.png)
+SnoopLogg is a debug logging library for Node.js and Bun. In addition to the
+usual list of features, SnoopLogg can snoop on other SnoopLogg loggers and
+combine the debug logs into a single source that can be piped to a stream.
 
 ## Features
 
@@ -17,6 +17,10 @@ Laid back debug logging for Node.js and Bun.
  * Filter messages using the `DEBUG` (or `SNOOPLOGG`) environment variable
  * Automatic color selection with brightness range
  * Similar API to [TJ's debug](https://www.npmjs.com/package/debug):
+
+# Demo
+
+![snooplogg](demo/screenshot.png)
 
 ## Examples
 

@@ -1,6 +1,7 @@
 import type { Writable } from 'node:stream';
 import { format, inspect } from 'node:util';
 import ansiStyles from 'ansi-styles';
+import { isJSON } from './is-json.js';
 import { NanoBuffer } from './nanobuffer.js';
 import { nsToRgb } from './ns-to-rgb.js';
 import type {
@@ -8,26 +9,35 @@ import type {
 	LogElements,
 	LogFormatter,
 	LogMessage,
-	LoggerConfig,
 	RawLogMessage,
 	SnoopLoggConfig,
-	SnoopLoggStreamMeta,
 	StyleHelpers
 } from './types.js';
 
 /**
- * TODO:
- * - [ ] Add JSDoc comments
- * - [ ] Finish demo (snoop, nested logger styles)
- * - [ ] Update readme
- * - [ ] Test Bun
+ * Describes the various log methods such as `info()`, `warn()`, etc.
+ *
+ * We have to export this type so that we can destructure and export the log
+ * methods in the index.ts file.
  */
-
 export type LogMethod = (...args: unknown[]) => Logger;
 
+/**
+ * Regular expression to match a stack frame in a stack trace.
+ * Tested with Node.js and Bun stack traces.
+ */
 const stackFrameRE = /^\s*at (.* )?(\(?.+\)?)$/;
 
-const defaultElements: FormatLogElements = {
+/**
+ * Default log element formatters.
+ */
+export const defaultElements: FormatLogElements = {
+	/**
+	 * Formats an error message.
+	 * @param err An error object.
+	 * @param styles The ansi-styles module plus the nsToRgb function.
+	 * @returns The formatted error message.
+	 */
 	error(err: Error, styles: StyleHelpers) {
 		const message = `${styles.redBright.open}${err.toString()}${styles.redBright.close}`;
 		let stack = '';
@@ -51,12 +61,28 @@ const defaultElements: FormatLogElements = {
 		}
 		return stack ? `${message}\n${stack}` : message;
 	},
+
+	/**
+	 * Formats a log message line. This is called for each line in a multi-line
+	 * log message.
+	 * @param msg The log message line.
+	 * @param method The log method name.
+	 * @param styles The ansi-styles module plus the nsToRgb function.
+	 * @returns The formatted log message line.
+	 */
 	message(msg: string, method: string, styles: StyleHelpers) {
 		if (method === 'trace') {
 			return `${styles.white.open}${msg}${styles.white.close}`;
 		}
 		return msg;
 	},
+
+	/**
+	 * Formats the log method name.
+	 * @param name The log method name.
+	 * @param styles The ansi-styles module plus the nsToRgb function.
+	 * @returns The formatted log method name.
+	 */
 	method(name: string, styles: StyleHelpers) {
 		const formattedName = name.toUpperCase().padEnd(5);
 		switch (name) {
@@ -74,15 +100,36 @@ const defaultElements: FormatLogElements = {
 				return `${styles.gray.open}${formattedName}${styles.gray.close}`;
 		}
 	},
+
+	/**
+	 * Formats the log message's namespace.
+	 * @param ns The logger namespace.
+	 * @param styles The ansi-styles module plus the nsToRgb function.
+	 * @returns The formatted logger namespace.
+	 */
 	namespace(ns: string, styles: StyleHelpers) {
 		const { r, g, b } = nsToRgb(ns);
 		return `${styles.color.ansi256(
 			styles.rgbToAnsi256(r, g, b)
 		)}${ns}${styles.color.close}`;
 	},
+
+	/**
+	 * Formats the log message's timestamp. This can be used by a custom formatter.
+	 * @param ts The timestamp.
+	 * @param styles The ansi-styles module plus the nsToRgb function.
+	 * @returns The formatted timestamp.
+	 */
 	timestamp(ts: Date, styles: StyleHelpers) {
 		return `${styles.gray.open}${ts.toISOString().replace('T', ' ').replace('Z', '')}${styles.gray.close}`;
 	},
+
+	/**
+	 * Formats the time the message was logged since the start of the process.
+	 * @param uptime The process uptime.
+	 * @param styles The ansi-styles module plus the nsToRgb function.
+	 * @returns The formatted process uptime.
+	 */
 	uptime(uptime: number, styles: StyleHelpers) {
 		return `${styles.gray.open}${uptime.toFixed(3).padStart(8)}s${styles.gray.close}`;
 	}
@@ -92,49 +139,53 @@ const defaultElements: FormatLogElements = {
  * The secret sauce.
  */
 class Functionator extends Function {
-	constructor(fn: (string) => Logger) {
+	/**
+	 * Initializes the base function used to create new namespaced child
+	 * logger instances.
+	 * @param fn A function that creates a child logger instance.
+	 * @returns A function with the instantiated class's prototype.
+	 */
+	constructor(fn: (namespace: string) => Logger) {
 		super();
 		return Object.setPrototypeOf(fn, new.target.prototype);
 	}
 }
 
-type LoggerOptions = {
-	namespace?: string;
-	parent: Logger;
-	root?: SnoopLogg;
-};
-
-export class Logger extends Functionator {
-	format?: LogFormatter | null;
-	id = Math.round(Math.random() * 1e9);
-	logMethods: Record<string, LogMethod> = {};
+/**
+ * The logger represents a namespace and can have a single parent and multiple
+ * child namespaces.
+ */
+class Logger extends Functionator {
+	_log: LogMethod | undefined;
+	_trace: LogMethod | undefined;
+	_debug: LogMethod | undefined;
+	_info: LogMethod | undefined;
+	_warn: LogMethod | undefined;
+	_error: LogMethod | undefined;
+	_panic: LogMethod | undefined;
 	ns: string;
 	nsPath: string[];
-	parent: Logger | null = null;
-	root: SnoopLogg | undefined;
-	elements: LogElements = {};
+	root: SnoopLogg;
 	subnamespaces: Record<string, Logger> = {};
 
-	constructor(opts?: LoggerOptions) {
-		super((namespace: string) => {
-			if (this.root && !this.subnamespaces[namespace]) {
-				this.subnamespaces[namespace] = Object.setPrototypeOf(
-					new Logger({
-						namespace,
-						parent: this,
-						root: this.root
-					}),
-					this.root.proto
-				);
-			}
-			return this.subnamespaces[namespace];
-		});
+	/**
+	 * Initializes a new logger instance by combining the parent namespace with
+	 * this logger's namespace.
+	 * @param root The root SnoogLogg instance.
+	 * @param parent The parent logger instance used to construct the namespace.
+	 * @param namespace The namespace of the logger.
+	 */
+	constructor(
+		root: SnoopLogg,
+		parent: Logger | null = null,
+		namespace?: string
+	) {
+		super((namespace: string) => this.initChild(namespace));
 
 		this.nsPath = [];
+		this.root = root;
 
-		if (opts !== undefined) {
-			const { namespace, parent, root } = opts;
-
+		if (namespace !== undefined) {
 			if (!namespace || typeof namespace !== 'string') {
 				throw new TypeError('Expected namespace to be a string');
 			}
@@ -142,12 +193,156 @@ export class Logger extends Functionator {
 				throw new Error('Namespace cannot contain spaces or commas');
 			}
 
-			this.nsPath = [...parent.nsPath, namespace];
-			this.parent = parent;
-			this.root = root;
+			this.nsPath = parent ? [...parent.nsPath, namespace] : [namespace];
 		}
 
 		this.ns = this.nsPath.join(':');
+	}
+
+	/**
+	 * Helper function to create a new child logger instance.
+	 * @param namespace The namespace of the child logger.
+	 * @returns A new child logger instance.
+	 */
+	initChild(namespace: string) {
+		if (!this.subnamespaces[namespace]) {
+			this.subnamespaces[namespace] = new Logger(this.root, this, namespace);
+		}
+		return this.subnamespaces[namespace];
+	}
+
+	/**
+	 * Lazy initializes a new log method.
+	 * @param method The log method name.
+	 * @returns A new log method.
+	 */
+	initMethod(method: string) {
+		return (...args: unknown[]) => {
+			this.root.dispatch({
+				args,
+				method,
+				ns: this.ns,
+				ts: new Date(),
+				uptime: process.uptime()
+			});
+			return this;
+		};
+	}
+
+	/**
+	 * Logs a message without a log method.
+	 * @param args The log message arguments.
+	 * @returns The logger instance.
+	 */
+	get log() {
+		if (!this._log) {
+			this._log = this.initMethod('log');
+		}
+		return this._log;
+	}
+
+	get trace() {
+		if (!this._trace) {
+			this._trace = this.initMethod('trace');
+		}
+		return this._trace;
+	}
+
+	get debug() {
+		if (!this._debug) {
+			this._debug = this.initMethod('debug');
+		}
+		return this._debug;
+	}
+
+	get info() {
+		if (!this._info) {
+			this._info = this.initMethod('info');
+		}
+		return this._info;
+	}
+
+	get warn() {
+		if (!this._warn) {
+			this._warn = this.initMethod('warn');
+		}
+		return this._warn;
+	}
+
+	get error() {
+		if (!this._error) {
+			this._error = this.initMethod('error');
+		}
+		return this._error;
+	}
+
+	get panic() {
+		if (!this._panic) {
+			this._panic = this.initMethod('panic');
+		}
+		return this._panic;
+	}
+}
+
+/**
+ * The public API for the SnoopLogg logger.
+ */
+export class SnoopLogg extends Functionator {
+	allow: string | RegExp | null = null;
+	elements: LogElements = {};
+	format?: LogFormatter | null;
+	history: NanoBuffer<RawLogMessage> = new NanoBuffer();
+	id = Math.round(Math.random() * 1e9);
+	ignore: RegExp | null = null;
+	onSnoopMessage: ((msg: RawLogMessage) => void) | null = null;
+	logger: Logger;
+	streams = new Map<Writable, () => void>();
+
+	constructor(conf?: SnoopLoggConfig) {
+		super((namespace: string) => this.logger.initChild(namespace));
+		this.logger = new Logger(this);
+		if (conf) {
+			this.config(conf);
+		}
+	}
+
+	config(conf: SnoopLoggConfig = {}) {
+		if (typeof conf !== 'object') {
+			throw new TypeError('Expected logger options to be an object');
+		}
+
+		if (conf.format && typeof conf.format !== 'function') {
+			throw new TypeError('Expected format to be a function');
+		}
+		this.format = conf.format;
+
+		if (conf.elements !== undefined) {
+			if (typeof conf.elements !== 'object') {
+				throw new TypeError('Expected elements to be an object');
+			}
+			if (conf.elements) {
+				for (const [type, fn] of Object.entries(conf.elements)) {
+					if (defaultElements[type] && typeof fn !== 'function') {
+						throw new TypeError(`Expected "${type}" elements to be a function`);
+					}
+				}
+			}
+			this.elements = conf.elements;
+		}
+
+		if (conf.historySize !== undefined) {
+			try {
+				this.history.maxSize = conf.historySize;
+			} catch (err: unknown) {
+				if (err instanceof Error) {
+					err.message = `Invalid history size: ${err.message}`;
+					err.stack = `${err.toString()}${err.stack?.substring(err.stack.indexOf('\n')) || ''}`;
+				}
+				throw err;
+			}
+		}
+
+		return this;
 	}
 
 	applyFormat(msg: RawLogMessage) {
@@ -175,184 +370,45 @@ export class Logger extends Functionator {
 		);
 	}
 
-	config(conf: LoggerConfig) {
-		if (typeof conf !== 'object') {
-			throw new TypeError('Expected logger options to be an object');
-		}
-
-		if (conf.format && typeof conf.format !== 'function') {
-			throw new TypeError('Expected format to be a function');
-		}
-		this.format = conf.format;
-
-		if (conf.elements !== undefined) {
-			if (typeof conf.elements !== 'object') {
-				throw new TypeError('Expected elements to be an object');
-			}
-			if (conf.elements) {
-				for (const [type, fn] of Object.entries(conf.elements)) {
-					if (defaultElements[type] && typeof fn !== 'function') {
-						throw new TypeError(`Expected "${type}" elements to be a function`);
-					}
-				}
-			}
-			this.elements = conf.elements;
-		}
-	}
-
 	dispatch({
 		args,
-		id,
+		id = this.id,
 		method,
-		ns
-	}: { args: unknown[]; id: number; method: string; ns: string }) {
+		ns,
+		ts,
+		uptime
+	}: {
+		args: unknown[];
+		id?: number;
+		method: string;
+		ns: string;
+		ts: Date;
+		uptime: number;
+	}) {
 		const msg: RawLogMessage = {
 			args,
+			elements: this.elements,
 			format: this.format,
 			id,
 			method,
 			ns,
-			elements: this.elements,
-			ts: new Date(),
-			uptime: process.uptime()
+			ts,
+			uptime
 		};
 
-		if (this.root) {
-			this.root.history.push(msg);
+		this.history.push(msg);
 
-			if (
-				(id === this.root.id && this.enabled) ||
-				(id !== this.root.id && this.root.isEnabled(ns))
-			) {
-				for (const stream of this.root.streams.keys()) {
-					stream.write(
-						stream.writableObjectMode ? msg : `${this.applyFormat(msg)}\n`
-					);
-				}
+		if (this.isEnabled(ns)) {
+			for (const stream of this.streams.keys()) {
+				stream.write(
+					stream.writableObjectMode ? msg : `${this.applyFormat(msg)}\n`
+				);
 			}
 		}
 
-		if (msg.id === this.id) {
+		if (id === this.id) {
 			globalThis.snooplogg.emit('message', msg);
 		}
-	}
-
-	get enabled() {
-		return this.root?.isEnabled(this.ns) || false;
-	}
-
-	initMethod(method: string) {
-		return (...args: unknown[]) => {
-			if (this.root) {
-				this.dispatch({
-					args,
-					id: this.root.id,
-					method,
-					ns: this.ns
-				});
-			}
-			return this;
-		};
-	}
-
-	get log() {
-		if (!this.logMethods.log) {
-			this.logMethods.log = this.initMethod('log');
-		}
-		return this.logMethods.log;
-	}
-
-	get trace() {
-		if (!this.logMethods.trace) {
-			this.logMethods.trace = this.initMethod('trace');
-		}
-		return this.logMethods.trace;
-	}
-
-	get debug() {
-		if (!this.logMethods.debug) {
-			this.logMethods.debug = this.initMethod('debug');
-		}
-		return this.logMethods.debug;
-	}
-
-	get info() {
-		if (!this.logMethods.info) {
-			this.logMethods.info = this.initMethod('info');
-		}
-		return this.logMethods.info;
-	}
-
-	get warn() {
-		if (!this.logMethods.warn) {
-			this.logMethods.warn = this.initMethod('warn');
-		}
-		return this.logMethods.warn;
-	}
-
-	get error() {
-		if (!this.logMethods.error) {
-			this.logMethods.error = this.initMethod('error');
-		}
-		return this.logMethods.error;
-	}
-
-	get panic() {
-		if (!this.logMethods.panic) {
-			this.logMethods.panic = this.initMethod('panic');
-		}
-		return this.logMethods.panic;
-	}
-}
-
-export class SnoopLogg extends Logger {
-	allow: string | RegExp | null = null;
-	history: NanoBuffer<RawLogMessage> = new NanoBuffer();
-	ignore: RegExp | null = null;
-	onSnoopMessage: ((msg: RawLogMessage) => void) | null = null;
-	proto: SnoopLogg;
-	streams = new Map<Writable, SnoopLoggStreamMeta>();
-
-	constructor(conf?: SnoopLoggConfig) {
-		super();
-		this.root = this;
-
-		const proto: SnoopLogg = Object.create(Functionator, {
-			...Object.getOwnPropertyDescriptors(Logger.prototype),
-			protoId: {
-				enumerable: false,
-				value: this.id
-			}
-		});
-		this.proto = Object.setPrototypeOf(
-			this,
-			Object.create(
-				proto,
-				Object.getOwnPropertyDescriptors(SnoopLogg.prototype)
-			)
-		);
-
-		if (conf) {
-			this.config(conf);
-		}
-	}
-
-	config(conf: SnoopLoggConfig = {}) {
-		super.config(conf);
-
-		if (conf.historySize !== undefined) {
-			try {
-				this.history.maxSize = conf.historySize;
-			} catch (err: unknown) {
-				if (err instanceof Error) {
-					err.message = `Invalid history size: ${err.message}`;
-					err.stack = `${err.toString()}${err.stack?.substring(err.stack.indexOf('\n')) || ''}`;
-				}
-				throw err;
-			}
-		}
-
-		return this;
 	}
 
 	enable(pattern: string | RegExp = '') {
@@ -426,7 +482,7 @@ export class SnoopLogg extends Logger {
 		}
 
 		const onEnd = () => this.streams.delete(stream);
-		this.streams.set(stream, { onEnd });
+		this.streams.set(stream, onEnd);
 		stream.on('end', onEnd);
 
 		if (opts.flush) {
@@ -449,9 +505,9 @@ export class SnoopLogg extends Logger {
 			throw new TypeError('Invalid stream');
 		}
 
-		const meta = this.streams.get(stream);
-		if (meta) {
-			stream.removeListener('end', meta.onEnd);
+		const onEnd = this.streams.get(stream);
+		if (onEnd) {
+			stream.removeListener('end', onEnd);
 			this.streams.delete(stream);
 		}
 	}
@@ -488,8 +544,50 @@ export class SnoopLogg extends Logger {
 		}
 		return this;
 	}
+
+	get log() {
+		return this.logger.log;
+	}
+
+	get trace() {
+		return this.logger.trace;
+	}
+
+	get debug() {
+		return this.logger.debug;
+	}
+
+	get info() {
+		return this.logger.info;
+	}
+
+	get warn() {
+		return this.logger.warn;
+	}
+
+	get error() {
+		return this.logger.error;
+	}
+
+	get panic() {
+		return this.logger.panic;
+	}
 }
 
+/**
+ * Formats each log message in the format "<uptime> <namespace> <method> <msg>".
+ *
+ * This is the default formatter used by SnoopLogg, but can be overridden by
+ * passing a custom formatter function to the SnoopLogg constructor or the
+ * config method.
+ *
+ * @param params.args - The raw arguments passed to the log method.
+ * @param params.elements - The log formatting elements.
+ * @param params.method - The log method name.
+ * @param params.ns - The namespace of the logger.
+ * @param params.uptime - The uptime of the process.
+ * @param styles - The ansi-styles module plus the nsToRgb function.
+ */
 export function defaultFormatter(
 	{ args, elements, method, ns, uptime }: LogMessage,
 	styles: StyleHelpers
@@ -520,12 +618,4 @@ export function defaultFormatter(
 		.split('\n')
 		.map(s => prefix + elements.message(s, method, styles))
 		.join('\n');
-}
-
-function isJSON(it: unknown): boolean {
-	if (it === null || typeof it !== 'object') {
-		return false;
-	}
-	const proto = Object.getPrototypeOf(it);
-	return proto?.constructor.name === 'Object';
 }
