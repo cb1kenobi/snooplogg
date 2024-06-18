@@ -1,29 +1,31 @@
 import type ansiStyles from 'ansi-styles';
+import type { nsToRgb } from './ns-to-rgb.js';
 
 export type SnoopLoggStyle = {
 	ns?: (ns: string) => string;
 };
 
-export type LogFormatter = (msg: LogMessage, styles: AnsiStyles) => string;
+export type LogFormatter = (msg: LogMessage, styles: StyleHelpers) => string;
 
-export type AnsiStyles = typeof ansiStyles;
+export type StyleHelpers = typeof ansiStyles & { nsToRgb: typeof nsToRgb };
 
-export type FormatLogStyles = {
-	error: (err: Error, styles: AnsiStyles) => string;
-	message: (msg: string, method: string, styles: AnsiStyles) => string;
-	method: (name: string, styles: AnsiStyles) => string;
-	namespace: (ns: string, styles: AnsiStyles) => string;
-	timestamp: (ts: Date, styles: AnsiStyles) => string;
+export type FormatLogElements = {
+	error: (err: Error, styles: StyleHelpers) => string;
+	message: (msg: string, method: string, styles: StyleHelpers) => string;
+	method: (name: string, styles: StyleHelpers) => string;
+	namespace: (ns: string, styles: StyleHelpers) => string;
+	timestamp: (ts: Date, styles: StyleHelpers) => string;
+	uptime: (uptime: number, styles: StyleHelpers) => string;
 };
 
-export type LogStyles = Partial<FormatLogStyles>;
+export type LogElements = Partial<FormatLogElements>;
 
-export interface LoggerOptions {
+export interface LoggerConfig {
 	format?: LogFormatter | null;
-	style?: LogStyles;
+	elements?: LogElements;
 }
 
-export interface SnoopLoggOptions extends LoggerOptions {
+export interface SnoopLoggConfig extends LoggerConfig {
 	historySize?: number;
 }
 
@@ -32,16 +34,18 @@ interface BaseLogMessage {
 	method: string;
 	ns: string;
 	ts: Date;
+	uptime: number;
 }
 
 export interface LogMessage extends BaseLogMessage {
-	style: FormatLogStyles;
+	elements: FormatLogElements;
 }
 
 export interface RawLogMessage extends BaseLogMessage {
 	format?: LogFormatter | null;
 	id: number;
-	style: LogStyles;
+	elements: LogElements;
+	uptime: number;
 }
 
 export type SnoopLoggStreamMeta = {

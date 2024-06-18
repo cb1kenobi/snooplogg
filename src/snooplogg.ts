@@ -4,24 +4,22 @@ import ansiStyles from 'ansi-styles';
 import { NanoBuffer } from './nanobuffer.js';
 import { nsToRgb } from './ns-to-rgb.js';
 import type {
-	AnsiStyles,
-	FormatLogStyles,
+	FormatLogElements,
+	LogElements,
 	LogFormatter,
 	LogMessage,
-	LogStyles,
-	LoggerOptions,
+	LoggerConfig,
 	RawLogMessage,
-	SnoopLoggOptions,
-	SnoopLoggStreamMeta
+	SnoopLoggConfig,
+	SnoopLoggStreamMeta,
+	StyleHelpers
 } from './types.js';
 
 /**
  * TODO:
  * - [ ] Add JSDoc comments
  * - [ ] Finish demo (snoop, nested logger styles)
- * - [ ] Add tests/coverage
  * - [ ] Update readme
- * - [ ] Test Deno
  * - [ ] Test Bun
  */
 
@@ -29,8 +27,8 @@ export type LogMethod = (...args: unknown[]) => Logger;
 
 const stackFrameRE = /^\s*at (.* )?(\(?.+\)?)$/;
 
-const defaultStyles: FormatLogStyles = {
-	error(err: Error, styles: AnsiStyles) {
+const defaultElements: FormatLogElements = {
+	error(err: Error, styles: StyleHelpers) {
 		const message = `${styles.redBright.open}${err.toString()}${styles.redBright.close}`;
 		let stack = '';
 		if (err.stack) {
@@ -39,30 +37,29 @@ const defaultStyles: FormatLogStyles = {
 				.slice(1)
 				.map((line, i, lines) => {
 					const m = line.match(stackFrameRE);
+					let result = `${styles.gray.open}${i + 1 < lines.length ? '├' : '└'}─ ${m ? '' : line.trim()}${styles.gray.close}`;
 					if (m) {
 						const [_, method, location] = m;
 						const stlyedMethod = method
 							? `${styles.whiteBright.open}${styles.italic.open}${method}${styles.italic.close}${styles.whiteBright.close}`
 							: '';
-						return `${styles.gray.open}${i + 1 < lines.length ? '├' : '└'}─ ${styles.gray.close}${stlyedMethod}${styles.white.open}${location}${styles.white.close}`;
+						result += `${stlyedMethod}${styles.white.open}${location}${styles.white.close}`;
 					}
-					return `${styles.gray.open}${line}${styles.gray.close}`;
+					return result;
 				})
 				.join('\n');
 		}
 		return stack ? `${message}\n${stack}` : message;
 	},
-	message(msg: string, method: string, styles: AnsiStyles) {
+	message(msg: string, method: string, styles: StyleHelpers) {
 		if (method === 'trace') {
 			return `${styles.white.open}${msg}${styles.white.close}`;
 		}
 		return msg;
 	},
-	method(name: string, styles: AnsiStyles) {
+	method(name: string, styles: StyleHelpers) {
 		const formattedName = name.toUpperCase().padEnd(5);
 		switch (name) {
-			case 'trace':
-				return `${styles.gray.open}${formattedName}${styles.gray.close}`;
 			case 'debug':
 				return `${styles.magenta.open}${formattedName}${styles.magenta.close}`;
 			case 'info':
@@ -73,18 +70,21 @@ const defaultStyles: FormatLogStyles = {
 				return `${styles.redBright.open}${formattedName}${styles.redBright.close}`;
 			case 'panic':
 				return `${styles.bgRed.open}${styles.white.open}${formattedName}${styles.white.close}${styles.bgRed.close}`;
-			default:
-				return formattedName;
+			default: // trace
+				return `${styles.gray.open}${formattedName}${styles.gray.close}`;
 		}
 	},
-	namespace(ns: string, styles: AnsiStyles) {
+	namespace(ns: string, styles: StyleHelpers) {
 		const { r, g, b } = nsToRgb(ns);
 		return `${styles.color.ansi256(
 			styles.rgbToAnsi256(r, g, b)
 		)}${ns}${styles.color.close}`;
 	},
-	timestamp(ts: Date, styles: AnsiStyles) {
+	timestamp(ts: Date, styles: StyleHelpers) {
 		return `${styles.gray.open}${ts.toISOString().replace('T', ' ').replace('Z', '')}${styles.gray.close}`;
+	},
+	uptime(uptime: number, styles: StyleHelpers) {
+		return `${styles.gray.open}${uptime.toFixed(3).padStart(8)}s${styles.gray.close}`;
 	}
 };
 
@@ -98,91 +98,105 @@ class Functionator extends Function {
 	}
 }
 
-class Logger extends Functionator {
+type LoggerOptions = {
+	namespace?: string;
+	parent: Logger;
+	root?: SnoopLogg;
+};
+
+export class Logger extends Functionator {
 	format?: LogFormatter | null;
 	id = Math.round(Math.random() * 1e9);
 	logMethods: Record<string, LogMethod> = {};
 	ns: string;
 	nsPath: string[];
-	parent: Logger | null;
+	parent: Logger | null = null;
 	root: SnoopLogg | undefined;
-	style: LogStyles = {};
+	elements: LogElements = {};
 	subnamespaces: Record<string, Logger> = {};
 
-	constructor(
-		namespace?: string,
-		parent: Logger | null = null,
-		root?: SnoopLogg
-	) {
-		if (namespace !== undefined) {
-			if (typeof namespace !== 'string') {
-				throw new TypeError('Expected namespace to be a string');
-			}
-			if (/[\s,]+/.test(namespace)) {
-				throw new Error('Namespace cannot contain spaces or commas');
-			}
-		}
-
+	constructor(opts?: LoggerOptions) {
 		super((namespace: string) => {
 			if (this.root && !this.subnamespaces[namespace]) {
 				this.subnamespaces[namespace] = Object.setPrototypeOf(
-					new Logger(namespace, this, this.root),
+					new Logger({
+						namespace,
+						parent: this,
+						root: this.root
+					}),
 					this.root.proto
 				);
 			}
 			return this.subnamespaces[namespace];
 		});
 
-		this.nsPath = !namespace
-			? []
-			: parent
-				? [...parent.nsPath, namespace]
-				: [namespace];
+		this.nsPath = [];
+
+		if (opts !== undefined) {
+			const { namespace, parent, root } = opts;
+
+			if (!namespace || typeof namespace !== 'string') {
+				throw new TypeError('Expected namespace to be a string');
+			}
+			if (/[\s,]+/.test(namespace)) {
+				throw new Error('Namespace cannot contain spaces or commas');
+			}
+
+			this.nsPath = [...parent.nsPath, namespace];
+			this.parent = parent;
+			this.root = root;
+		}
+
 		this.ns = this.nsPath.join(':');
-		this.parent = parent;
-		this.root = root;
 	}
 
 	applyFormat(msg: RawLogMessage) {
-		const { args, format, id, method, ns, style, ts } = msg;
+		const { args, elements, format, method, ns, ts, uptime } = msg;
 		const formatter = format || defaultFormatter;
 		return formatter(
 			{
 				args,
 				method,
 				ns,
-				style: {
-					...defaultStyles,
-					...style
+				elements: {
+					...defaultElements,
+					...elements
 				},
-				ts
+				ts,
+				uptime
 			},
-			ansiStyles
+			Object.defineProperties(
+				{
+					...ansiStyles,
+					nsToRgb
+				},
+				Object.getOwnPropertyDescriptors(ansiStyles)
+			)
 		);
 	}
 
-	config(opts: LoggerOptions) {
-		if (typeof opts !== 'object') {
+	config(conf: LoggerConfig) {
+		if (typeof conf !== 'object') {
 			throw new TypeError('Expected logger options to be an object');
 		}
 
-		if (opts.format && typeof opts.format !== 'function') {
+		if (conf.format && typeof conf.format !== 'function') {
 			throw new TypeError('Expected format to be a function');
 		}
-		this.format = opts.format;
+		this.format = conf.format;
 
-		if (opts.style !== undefined) {
-			if (typeof opts.style !== 'object') {
-				throw new TypeError('Expected style to be an object');
+		if (conf.elements !== undefined) {
+			if (typeof conf.elements !== 'object') {
+				throw new TypeError('Expected elements to be an object');
 			}
-			if (opts.style) {
-				for (const [type, fn] of Object.entries(opts.style)) {
-					if (defaultStyles[type] && typeof fn !== 'function') {
-						throw new TypeError(`Expected "${type}" style to be a function`);
+			if (conf.elements) {
+				for (const [type, fn] of Object.entries(conf.elements)) {
+					if (defaultElements[type] && typeof fn !== 'function') {
+						throw new TypeError(`Expected "${type}" elements to be a function`);
 					}
 				}
 			}
-			this.style = opts.style;
+			this.elements = conf.elements;
 		}
 	}
 
@@ -192,30 +206,29 @@ class Logger extends Functionator {
 		method,
 		ns
 	}: { args: unknown[]; id: number; method: string; ns: string }) {
-		if (!this.root) {
-			return;
-		}
-
 		const msg: RawLogMessage = {
 			args,
 			format: this.format,
 			id,
 			method,
 			ns,
-			style: this.style,
-			ts: new Date()
+			elements: this.elements,
+			ts: new Date(),
+			uptime: process.uptime()
 		};
 
-		this.root.history.push(msg);
+		if (this.root) {
+			this.root.history.push(msg);
 
-		if (
-			(id === this.root.id && this.enabled) ||
-			(id !== this.root.id && this.root.isEnabled(ns))
-		) {
-			for (const stream of this.root.streams.keys()) {
-				stream.write(
-					stream.writableObjectMode ? msg : `${this.applyFormat(msg)}\n`
-				);
+			if (
+				(id === this.root.id && this.enabled) ||
+				(id !== this.root.id && this.root.isEnabled(ns))
+			) {
+				for (const stream of this.root.streams.keys()) {
+					stream.write(
+						stream.writableObjectMode ? msg : `${this.applyFormat(msg)}\n`
+					);
+				}
 			}
 		}
 
@@ -297,36 +310,39 @@ export class SnoopLogg extends Logger {
 	history: NanoBuffer<RawLogMessage> = new NanoBuffer();
 	ignore: RegExp | null = null;
 	onSnoopMessage: ((msg: RawLogMessage) => void) | null = null;
-	proto: SnoopLogg | null = null;
+	proto: SnoopLogg;
 	streams = new Map<Writable, SnoopLoggStreamMeta>();
 
-	constructor(opts?: SnoopLoggOptions) {
+	constructor(conf?: SnoopLoggConfig) {
 		super();
 		this.root = this;
 
-		this.proto = Object.create(
-			Functionator,
-			Object.getOwnPropertyDescriptors(Logger.prototype)
-		);
-		Object.setPrototypeOf(
+		const proto: SnoopLogg = Object.create(Functionator, {
+			...Object.getOwnPropertyDescriptors(Logger.prototype),
+			protoId: {
+				enumerable: false,
+				value: this.id
+			}
+		});
+		this.proto = Object.setPrototypeOf(
 			this,
 			Object.create(
-				this.proto,
+				proto,
 				Object.getOwnPropertyDescriptors(SnoopLogg.prototype)
 			)
 		);
 
-		if (opts) {
-			this.config(opts);
+		if (conf) {
+			this.config(conf);
 		}
 	}
 
-	config(opts: SnoopLoggOptions = {}) {
-		super.config(opts);
+	config(conf: SnoopLoggConfig = {}) {
+		super.config(conf);
 
-		if (opts.historySize !== undefined) {
+		if (conf.historySize !== undefined) {
 			try {
-				this.history.maxSize = opts.historySize;
+				this.history.maxSize = conf.historySize;
 			} catch (err: unknown) {
 				if (err instanceof Error) {
 					err.message = `Invalid history size: ${err.message}`;
@@ -364,7 +380,7 @@ export class SnoopLogg extends Logger {
 				}
 			}
 
-			allow = new RegExp(`^(${allows.join('|')})$`);
+			allow = new RegExp(`^(${allows.join('|')})(:.+|$)`);
 
 			if (ignores.length) {
 				ignore = new RegExp(`^(${ignores.join('|')})$`);
@@ -440,7 +456,7 @@ export class SnoopLogg extends Logger {
 		}
 	}
 
-	snoop(nsPrefix: string) {
+	snoop(nsPrefix?: string) {
 		if (nsPrefix !== undefined && typeof nsPrefix !== 'string') {
 			throw new TypeError('Expected namespace prefix to be a string');
 		}
@@ -474,13 +490,13 @@ export class SnoopLogg extends Logger {
 	}
 }
 
-function defaultFormatter(
-	{ args, method, ns, style, ts }: LogMessage,
-	styles: AnsiStyles
+export function defaultFormatter(
+	{ args, elements, method, ns, uptime }: LogMessage,
+	styles: StyleHelpers
 ) {
-	const prefix = `${style.timestamp(ts, styles)} ${
-		ns ? `${style.namespace(ns, styles)} ` : ''
-	}${method && method !== 'log' ? `${style.method(method, styles)} ` : ''}`;
+	const prefix = `${elements.uptime(uptime, styles)} ${
+		ns ? `${elements.namespace(ns, styles)} ` : ''
+	}${method && method !== 'log' ? `${elements.method(method, styles)} ` : ''}`;
 
 	const formattedArgs = args.map(it =>
 		isJSON(it)
@@ -496,13 +512,13 @@ function defaultFormatter(
 	for (let i = 0, len = formattedArgs.length; i < len; i++) {
 		const arg = formattedArgs[i];
 		if (arg instanceof Error) {
-			formattedArgs[i] = style.error(arg, styles);
+			formattedArgs[i] = elements.error(arg, styles);
 		}
 	}
 
 	return format(...formattedArgs)
 		.split('\n')
-		.map(s => prefix + style.message(s, method, styles))
+		.map(s => prefix + elements.message(s, method, styles))
 		.join('\n');
 }
 
