@@ -24,8 +24,8 @@ export class NanoBuffer<T> {
 
 	/**
 	 * Creates a `NanoBuffer` instance.
-	 *
-	 * @param [maxSize=10] - The initial buffer size.
+	 * @param maxSize The initial buffer size.
+	 * @access public
 	 */
 	constructor(maxSize = 0) {
 		if (typeof maxSize !== 'number') {
@@ -42,8 +42,7 @@ export class NanoBuffer<T> {
 
 	/**
 	 * Returns the index of the newest value in the buffer.
-	 *
-	 * @returns {Number}
+	 * @returns The index of the newest value in the buffer.
 	 * @access public
 	 */
 	get head() {
@@ -52,8 +51,7 @@ export class NanoBuffer<T> {
 
 	/**
 	 * Returns the maximum number of values in the buffer.
-	 *
-	 * @returns {Number}
+	 * @returns The max size of the buffer.
 	 * @access public
 	 */
 	get maxSize() {
@@ -62,8 +60,7 @@ export class NanoBuffer<T> {
 
 	/**
 	 * Changes the maximum number of values allowed in the buffer.
-	 *
-	 * @param {Number} new_maxSize - The new max size of the buffer.
+	 * @param new_maxSize The new max size of the buffer.
 	 * @access public
 	 */
 	set maxSize(new_maxSize) {
@@ -97,8 +94,7 @@ export class NanoBuffer<T> {
 
 	/**
 	 * Returns the number of values in the buffer.
-	 *
-	 * @returns {Number}
+	 * @returns The size of the buffer.
 	 * @access public
 	 */
 	get size() {
@@ -107,9 +103,8 @@ export class NanoBuffer<T> {
 
 	/**
 	 * Inserts a new value into the buffer.
-	 *
-	 * @param {*} value - The value to store.
-	 * @returns {NanoBuffer}
+	 * @param value The value to store.
+	 * @returns The NanoBuffer instance.
 	 * @access public
 	 */
 	push(value: T) {
@@ -132,8 +127,7 @@ export class NanoBuffer<T> {
 
 	/**
 	 * Removes all values in the buffer.
-	 *
-	 * @returns {NanoBuffer}
+	 * @returns The NanoBuffer instance.
 	 * @access public
 	 */
 	clear() {
@@ -145,8 +139,7 @@ export class NanoBuffer<T> {
 
 	/**
 	 * Creates an iterator function for this buffer.
-	 *
-	 * @return {Function}
+	 * @return An iterator function.
 	 * @access public
 	 */
 	[Symbol.iterator]() {

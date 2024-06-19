@@ -1,26 +1,25 @@
 <br>
 <div align="center">
-	<img width="640" height="240" src=".github/SnoopLogg.webp" alt="SnoopLogg">
+	<img width="640" height="240" src="media/SnoopLogg.webp" alt="SnoopLogg">
 </div>
 <br>
 
-SnoopLogg is a debug logging library for Node.js and Bun. In addition to the
-usual list of features, SnoopLogg can snoop on other SnoopLogg loggers and
-combine the debug logs into a single source that can be piped to a stream.
+SnoopLogg is a lightweight debug logging library for Node.js and Bun. It is
+specifically designed for CLI programs, daemons, and libraries.
 
-## Features
+# Features
 
- * Built-in and custom log types
- * Ability to snoop on other snooplogg instances nested in dependencies
- * Pipe messages to one or more streams
- * Namespacing
- * Filter messages using the `DEBUG` (or `SNOOPLOGG`) environment variable
- * Automatic color selection with brightness range
- * Similar API to [TJ's debug](https://www.npmjs.com/package/debug):
+ - Snoop on other nested SnoopLogg instances combining them
+ - Pipe messages to one or more streams (such as a file or socket)
+ - Support for `objectMode` streams
+ - Namespaced and nested namespaced loggers with filtering support
+ - Automatic namespace colorization
+ - Custom log message formatting and styling
+ - Pretty stack trace rendering
 
 # Demo
 
-![snooplogg](demo/screenshot.png)
+![SnoopLogg](demo/screenshot.png)
 
 ## Examples
 

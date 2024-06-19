@@ -50,6 +50,7 @@
     "typescript": "5.4.5",
     "vitest": "1.6.0"
   },
+  "files": ["dist"],
   "homepage": "https://github.com/cb1kenobi/snooplogg",
   "bugs": "https://github.com/cb1kenobi/snooplogg/issues",
   "repository": "https://github.com/cb1kenobi/snooplogg",

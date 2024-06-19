@@ -1,6 +1,14 @@
-export function nsToRgb(text: string) {
-	let h1 = 0xdeadbeef;
-	let h2 = 0x41c6ce57;
+import type { Color } from './types';
+
+/**
+ * Deterministically generates a color from a string that isn't too dark to too
+ * light.
+ * @param text The string to generate a color from.
+ * @returns An RGB color object.
+ */
+export function nsToRgb(text: string): Color {
+	let h1 = 0xebe8e7bd;
+	let h2 = 0x135fa58e;
 	for (let i = 0, len = text.length; i < len; i++) {
 		const ch = text.charCodeAt(i);
 		h1 = Math.imul(h1 ^ ch, 2654435761);

@@ -1,12 +1,7 @@
+import { Writable } from 'node:stream';
 import { WritableStream } from 'memory-streams';
 import { describe, expect, it } from 'vitest';
-import snooplogg, { SnoopLogg } from '../src/index.js';
-
-const pattern = [
-	'[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\\u0007)',
-	'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))'
-].join('|');
-const stripRegExp = new RegExp(pattern, 'g');
+import snooplogg, { SnoopLogg, stripRegExp } from '../src/index.js';
 
 describe('SnoopLogg', () => {
 	describe('constructor()', () => {
@@ -131,12 +126,12 @@ describe('SnoopLogg', () => {
 			expect(instance.isEnabled('foobar')).toBe(true);
 			expect(instance.isEnabled('barfoo')).toBe(false);
 
-			instance.enable('foo,bar');
+			instance.enable('foo, bar');
 			expect(instance.isEnabled('foo')).toBe(true);
 			expect(instance.isEnabled('bar')).toBe(true);
 			expect(instance.isEnabled('baz')).toBe(false);
 
-			instance.enable('foo,-bar');
+			instance.enable('foo | -bar');
 			expect(instance.isEnabled('foo')).toBe(true);
 			expect(instance.isEnabled('bar')).toBe(false);
 
@@ -182,6 +177,47 @@ describe('SnoopLogg', () => {
 				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				new SnoopLogg().unpipe('foo' as any);
 			}).toThrowError(new TypeError('Invalid stream'));
+		});
+
+		it('should pipe to stream with object mode', async () => {
+			class ObjectWritable extends Writable {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				chunks: any[] = [];
+				_write(
+					// biome-ignore lint/suspicious/noExplicitAny: Test case
+					chunk: any,
+					encoding: BufferEncoding,
+					callback: (err: Error | null | undefined) => void
+				) {
+					this.chunks.push(chunk);
+					callback(null);
+				}
+			}
+
+			const out = new ObjectWritable({
+				objectMode: true
+			});
+			const instance = new SnoopLogg().enable('*').pipe(out);
+			instance.log('foo');
+			instance.info('bar');
+
+			expect(out.chunks).toHaveLength(2);
+			const [foo, bar] = out.chunks;
+			expect(foo.args).toEqual(['foo']);
+			expect(foo.method).toBe('log');
+			expect(bar.args).toEqual(['bar']);
+			expect(bar.method).toBe('info');
+		});
+
+		it('should strip colors if stream is not a TTY', () => {
+			class NoTTYStream extends WritableStream {
+				isTTY = false;
+			}
+			const out = new NoTTYStream();
+			const instance = new SnoopLogg().enable('*').pipe(out);
+			instance.info('foo');
+
+			expect(out.toString().trim()).toMatch(/^\s*\d\.\d{3}s INFO\s+foo$/);
 		});
 	});
 
@@ -322,9 +358,19 @@ describe('SnoopLogg', () => {
 			}).toThrowError(new TypeError('Expected namespace to be a string'));
 
 			expect(() => {
-				instance('foo bar');
+				instance('foo, bar');
 			}).toThrowError(
-				new TypeError('Namespace cannot contain spaces or commas')
+				new TypeError(
+					'Namespace cannot contain spaces, commas, or pipe characters'
+				)
+			);
+
+			expect(() => {
+				instance('foo | bar');
+			}).toThrowError(
+				new TypeError(
+					'Namespace cannot contain spaces, commas, or pipe characters'
+				)
 			);
 		});
 	});

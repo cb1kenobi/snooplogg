@@ -1,4 +1,3 @@
-import type { Writable } from 'node:stream';
 import { format, inspect } from 'node:util';
 import ansiStyles from 'ansi-styles';
 import { isJSON } from './is-json.js';
@@ -11,7 +10,8 @@ import type {
 	LogMessage,
 	RawLogMessage,
 	SnoopLoggConfig,
-	StyleHelpers
+	StyleHelpers,
+	WritableLike
 } from './types.js';
 
 /**
@@ -136,6 +136,15 @@ export const defaultElements: FormatLogElements = {
 };
 
 /**
+ * Regular expression to strip ansi color sequences.
+ */
+const pattern = [
+	'[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\\u0007)',
+	'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))'
+].join('|');
+export const stripRegExp = new RegExp(pattern, 'g');
+
+/**
  * The secret sauce.
  */
 class Functionator extends Function {
@@ -144,6 +153,7 @@ class Functionator extends Function {
 	 * logger instances.
 	 * @param fn A function that creates a child logger instance.
 	 * @returns A function with the instantiated class's prototype.
+	 * @access public
 	 */
 	constructor(fn: (namespace: string) => Logger) {
 		super();
@@ -174,6 +184,7 @@ class Logger extends Functionator {
 	 * @param root The root SnoogLogg instance.
 	 * @param parent The parent logger instance used to construct the namespace.
 	 * @param namespace The namespace of the logger.
+	 * @access public
 	 */
 	constructor(
 		root: SnoopLogg,
@@ -189,8 +200,10 @@ class Logger extends Functionator {
 			if (!namespace || typeof namespace !== 'string') {
 				throw new TypeError('Expected namespace to be a string');
 			}
-			if (/[\s,]+/.test(namespace)) {
-				throw new Error('Namespace cannot contain spaces or commas');
+			if (/[\s,|]+/.test(namespace)) {
+				throw new Error(
+					'Namespace cannot contain spaces, commas, or pipe characters'
+				);
 			}
 
 			this.nsPath = parent ? [...parent.nsPath, namespace] : [namespace];
@@ -203,6 +216,7 @@ class Logger extends Functionator {
 	 * Helper function to create a new child logger instance.
 	 * @param namespace The namespace of the child logger.
 	 * @returns A new child logger instance.
+	 * @access public
 	 */
 	initChild(namespace: string) {
 		if (!this.subnamespaces[namespace]) {
@@ -215,6 +229,7 @@ class Logger extends Functionator {
 	 * Lazy initializes a new log method.
 	 * @param method The log method name.
 	 * @returns A new log method.
+	 * @access private
 	 */
 	initMethod(method: string) {
 		return (...args: unknown[]) => {
@@ -233,6 +248,7 @@ class Logger extends Functionator {
 	 * Logs a message without a log method.
 	 * @param args The log message arguments.
 	 * @returns The logger instance.
+	 * @access public
 	 */
 	get log() {
 		if (!this._log) {
@@ -286,6 +302,8 @@ class Logger extends Functionator {
 
 /**
  * The public API for the SnoopLogg logger.
+ *
+ * The history buffer is disabled by default.
  */
 export class SnoopLogg extends Functionator {
 	allow: string | RegExp | null = null;
@@ -296,8 +314,13 @@ export class SnoopLogg extends Functionator {
 	ignore: RegExp | null = null;
 	onSnoopMessage: ((msg: RawLogMessage) => void) | null = null;
 	logger: Logger;
-	streams = new Map<Writable, () => void>();
+	streams = new Map<WritableLike, () => void>();
 
+	/**
+	 * Initializes the initial logger instance and configuration.
+	 * @param conf The SnoogLogg configuration.
+	 * @access public
+	 */
 	constructor(conf?: SnoopLoggConfig) {
 		super((namespace: string) => this.logger.initChild(namespace));
 		this.logger = new Logger(this);
@@ -306,6 +329,15 @@ export class SnoopLogg extends Functionator {
 		}
 	}
 
+	/**
+	 * Validate and applies the SnoopLogg configuration.
+	 * @param conf The SnoopLogg configuration.
+	 * @param conf.elements A map of log element format functions.
+	 * @param conf.format The log message formatter function.
+	 * @param conf.historySize The maximum number of log messages to store in the history.
+	 * @returns The SnoopLogg instance.
+	 * @access private
+	 */
 	config(conf: SnoopLoggConfig = {}) {
 		if (typeof conf !== 'object') {
 			throw new TypeError('Expected logger options to be an object');
@@ -345,6 +377,12 @@ export class SnoopLogg extends Functionator {
 		return this;
 	}
 
+	/**
+	 * Internal helper function that applies the formatter to the log message.
+	 * @param msg The raw log message.
+	 * @returns The formatted log message.
+	 * @access private
+	 */
 	applyFormat(msg: RawLogMessage) {
 		const { args, elements, format, method, ns, ts, uptime } = msg;
 		const formatter = format || defaultFormatter;
@@ -370,6 +408,19 @@ export class SnoopLogg extends Functionator {
 		);
 	}
 
+	/**
+	 * Internal function that dispatches a log message to all streams and
+	 * SnoopLogg instances.
+	 * @param msg The raw log message.
+	 * @param msg.args The raw arguments passed to the log method.
+	 * @param msg.id The unique identifier of the logger instance.
+	 * @param msg.method The log method name.
+	 * @param msg.ns The namespace of the log message's logger.
+	 * @param msg.ts The timestamp for which the log message was created.
+	 * @param msg.uptime The time the process has been running when the log
+	 * message was created.
+	 * @access private
+	 */
 	dispatch({
 		args,
 		id = this.id,
@@ -399,9 +450,16 @@ export class SnoopLogg extends Functionator {
 		this.history.push(msg);
 
 		if (this.isEnabled(ns)) {
+			const formatted = `${this.applyFormat(msg)}\n`;
 			for (const stream of this.streams.keys()) {
+				// TODO: stream specific formatting? colors, timestamp vs uptime, etc
+
 				stream.write(
-					stream.writableObjectMode ? msg : `${this.applyFormat(msg)}\n`
+					stream.writableObjectMode
+						? msg
+						: stream.isTTY === false
+							? formatted.replace(stripRegExp, '')
+							: formatted
 				);
 			}
 		}
@@ -411,6 +469,16 @@ export class SnoopLogg extends Functionator {
 		}
 	}
 
+	/**
+	 * Resets the current enabled and ignored namespaces.
+	 * @param pattern The pattern(s) to enable or disable namespaces. When this
+	 * value is `*`, all namespaces are enabled. Multiple namespaces can be
+	 * separated by a comma or pipe character. Prefixing a namespace with a `-`
+	 * character will disable the namespace. Wildcards can be used by prefixing
+	 * the namespace with a `*` character.
+	 * @returns The SnoopLogg instance.
+	 * @access public
+	 */
 	enable(pattern: string | RegExp = '') {
 		if (typeof pattern !== 'string' && !(pattern instanceof RegExp)) {
 			throw new TypeError('Expected pattern to be a string or regex');
@@ -425,7 +493,8 @@ export class SnoopLogg extends Functionator {
 			const allows: string[] = [];
 			const ignores: string[] = [];
 
-			for (let p of pattern.split(/[\s,]+/)) {
+			for (let p of pattern.split(/[,|]+/)) {
+				p = p.trim();
 				if (p) {
 					p = p.replaceAll('*', '.*?');
 					if (p[0] === '-') {
@@ -449,6 +518,12 @@ export class SnoopLogg extends Functionator {
 		return this;
 	}
 
+	/**
+	 * Checks if a specific namespace is enabled.
+	 * @param namespace The namespace to check.
+	 * @returns `true` if the namespace is enabled, otherwise `false`.
+	 * @access public
+	 */
 	isEnabled(namespace: string) {
 		const allow = this.allow;
 		if (allow === null) {
@@ -456,23 +531,29 @@ export class SnoopLogg extends Functionator {
 			return false;
 		}
 
-		if (!namespace || allow === '*') {
-			// nothing to filter
-			return true;
-		}
-
 		if (
-			allow instanceof RegExp &&
-			allow.test(namespace) &&
-			(!this.ignore || !this.ignore.test(namespace))
+			!namespace ||
+			allow === '*' ||
+			(allow instanceof RegExp &&
+				allow.test(namespace) &&
+				(!this.ignore || !this.ignore.test(namespace)))
 		) {
+			// nothing to filter
 			return true;
 		}
 
 		return false;
 	}
 
-	pipe(stream: Writable, opts: { flush?: boolean } = {}) {
+	/**
+	 * Adds a writable stream to pipe log messages to.
+	 * @param stream The stream to pipe log messages to.
+	 * @param opts The options object.
+	 * @param opts.flush When `true`, immediately flushes the history to the stream.
+	 * @returns The SnoopLogg instance.
+	 * @access public
+	 */
+	pipe(stream: WritableLike, opts: { flush?: boolean } = {}) {
 		if (!stream || typeof stream.write !== 'function') {
 			throw new TypeError('Invalid stream');
 		}
@@ -500,7 +581,13 @@ export class SnoopLogg extends Functionator {
 		return this;
 	}
 
-	unpipe(stream: Writable) {
+	/**
+	 * Removes a stream.
+	 * @param stream The stream to remove.
+	 * @returns The SnoopLogg instance.
+	 * @access public
+	 */
+	unpipe(stream: WritableLike) {
 		if (!stream || typeof stream.write !== 'function') {
 			throw new TypeError('Invalid stream');
 		}
@@ -510,8 +597,17 @@ export class SnoopLogg extends Functionator {
 			stream.removeListener('end', onEnd);
 			this.streams.delete(stream);
 		}
+
+		return this;
 	}
 
+	/**
+	 * Listens for log messages from other SnoopLogg instances and optionally
+	 * prepends a namespace prefix to the messages.
+	 * @param nsPrefix The namespace prefix to prepend to the messages.
+	 * @returns The SnoopLogg instance.
+	 * @access public
+	 */
 	snoop(nsPrefix?: string) {
 		if (nsPrefix !== undefined && typeof nsPrefix !== 'string') {
 			throw new TypeError('Expected namespace prefix to be a string');
@@ -537,6 +633,11 @@ export class SnoopLogg extends Functionator {
 		return this;
 	}
 
+	/**
+	 * Stops listening for log messages from other SnoopLogg instances.
+	 * @returns The SnoopLogg instance.
+	 * @access public
+	 */
 	unsnoop() {
 		if (this.onSnoopMessage) {
 			globalThis.snooplogg.off('message', this.onSnoopMessage);
@@ -545,6 +646,12 @@ export class SnoopLogg extends Functionator {
 		return this;
 	}
 
+	/**
+	 * Logs a message without a log method.
+	 * @param args The log message arguments.
+	 * @returns The logger instance.
+	 * @access public
+	 */
 	get log() {
 		return this.logger.log;
 	}
@@ -581,12 +688,14 @@ export class SnoopLogg extends Functionator {
  * passing a custom formatter function to the SnoopLogg constructor or the
  * config method.
  *
+ * @param params - The formatter parameters.
  * @param params.args - The raw arguments passed to the log method.
  * @param params.elements - The log formatting elements.
  * @param params.method - The log method name.
  * @param params.ns - The namespace of the logger.
  * @param params.uptime - The uptime of the process.
  * @param styles - The ansi-styles module plus the nsToRgb function.
+ * @returns The formatted log message.
  */
 export function defaultFormatter(
 	{ args, elements, method, ns, uptime }: LogMessage,

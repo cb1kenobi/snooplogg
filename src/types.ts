@@ -1,8 +1,15 @@
 import type ansiStyles from 'ansi-styles';
 import type { nsToRgb } from './ns-to-rgb.js';
 
-export type SnoopLoggStyle = {
-	ns?: (ns: string) => string;
+export type WritableLike = {
+	isTTY?: boolean;
+	// biome-ignore lint/suspicious/noExplicitAny: Test case
+	on: (...args: any[]) => any;
+	// biome-ignore lint/suspicious/noExplicitAny: Test case
+	removeListener: (...args: any[]) => any;
+	writableObjectMode?: boolean;
+	// biome-ignore lint/suspicious/noExplicitAny: Test case
+	write: (...args: any[]) => any;
 };
 
 export type LogFormatter = (msg: LogMessage, styles: StyleHelpers) => string;
