@@ -28,6 +28,7 @@ export type FormatLogElements = {
 export type LogElements = Partial<FormatLogElements>;
 
 export interface SnoopLoggConfig {
+	colors?: boolean;
 	elements?: LogElements;
 	format?: LogFormatter | null;
 	historySize?: number;
@@ -42,13 +43,26 @@ interface BaseLogMessage {
 }
 
 export interface LogMessage extends BaseLogMessage {
+	colors: boolean;
 	elements: FormatLogElements;
 }
 
+interface StreamBase {
+	colors?: boolean;
+	elements?: LogElements;
+	format?: LogFormatter;
+}
+
+export interface StreamConfig extends StreamBase {
+	onEnd?: () => void;
+}
+
+export interface StreamOptions extends StreamBase {
+	flush?: boolean;
+}
+
 export interface RawLogMessage extends BaseLogMessage {
-	format?: LogFormatter | null;
 	id: number;
-	elements: LogElements;
 	uptime: number;
 }
 

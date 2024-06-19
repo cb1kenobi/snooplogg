@@ -20,6 +20,7 @@ describe('SnoopLogg', () => {
 	describe('config()', () => {
 		it('should error if config options are invalid', () => {
 			const instance = new SnoopLogg();
+
 			expect(() => {
 				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				instance.config('foo' as any);
@@ -218,6 +219,26 @@ describe('SnoopLogg', () => {
 			instance.info('foo');
 
 			expect(out.toString().trim()).toMatch(/^\s*\d\.\d{3}s INFO\s+foo$/);
+		});
+
+		it('should apply pipe specific formatter', () => {
+			const out = new WritableStream();
+			const outFormatted = new WritableStream();
+			const instance = new SnoopLogg()
+				.enable('*')
+				.pipe(out)
+				.pipe(outFormatted, {
+					format(msg) {
+						return `The message is: ${msg.args[0]}`;
+					}
+				});
+			instance.log('foo');
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
+				/^\s*\d\.\d{3}s foo$/
+			);
+			expect(outFormatted.toString().trim().replace(stripRegExp, '')).toBe(
+				'The message is: foo'
+			);
 		});
 	});
 
@@ -468,6 +489,34 @@ describe('SnoopLogg', () => {
 			instance2.log('baz');
 			const output = out.toString().trim().replace(stripRegExp, '');
 			expect(output).toMatch(/^\s*\d\.\d{3}s bar$/);
+		});
+	});
+
+	describe('colors', () => {
+		it('should error if config options are invalid', () => {
+			const instance = new SnoopLogg();
+			expect(() => {
+				// biome-ignore lint/suspicious/noExplicitAny: Test case
+				instance.config({ colors: 'foo' as any });
+			}).toThrowError(new TypeError('Expected colors to be a boolean'));
+		});
+
+		it('should strip colors', () => {
+			const out = new WritableStream();
+			const outNoColors = new WritableStream();
+			const instance = new SnoopLogg({ colors: true })
+				.enable('*')
+				.pipe(out)
+				.pipe(outNoColors, { colors: false });
+
+			instance.log('foo');
+
+			const output = out.toString().trim();
+			const outputNoColors = outNoColors.toString().trim();
+
+			expect(output.replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo$/);
+			expect(output).not.toBe(outputNoColors);
+			expect(outputNoColors).toMatch(/^\s*\d\.\d{3}s foo$/);
 		});
 	});
 });

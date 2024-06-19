@@ -10,6 +10,8 @@ import type {
 	LogMessage,
 	RawLogMessage,
 	SnoopLoggConfig,
+	StreamConfig,
+	StreamOptions,
 	StyleHelpers,
 	WritableLike
 } from './types.js';
@@ -307,6 +309,7 @@ class Logger extends Functionator {
  */
 export class SnoopLogg extends Functionator {
 	allow: string | RegExp | null = null;
+	colors = true;
 	elements: LogElements = {};
 	format?: LogFormatter | null;
 	history: NanoBuffer<RawLogMessage> = new NanoBuffer();
@@ -314,7 +317,7 @@ export class SnoopLogg extends Functionator {
 	ignore: RegExp | null = null;
 	onSnoopMessage: ((msg: RawLogMessage) => void) | null = null;
 	logger: Logger;
-	streams = new Map<WritableLike, () => void>();
+	streams = new Map<WritableLike, StreamConfig>();
 
 	/**
 	 * Initializes the initial logger instance and configuration.
@@ -341,6 +344,13 @@ export class SnoopLogg extends Functionator {
 	config(conf: SnoopLoggConfig = {}) {
 		if (typeof conf !== 'object') {
 			throw new TypeError('Expected logger options to be an object');
+		}
+
+		if (conf.colors !== undefined) {
+			if (typeof conf.colors !== 'boolean') {
+				throw new TypeError('Expected colors to be a boolean');
+			}
+			this.colors = conf.colors;
 		}
 
 		if (conf.format && typeof conf.format !== 'function') {
@@ -378,37 +388,6 @@ export class SnoopLogg extends Functionator {
 	}
 
 	/**
-	 * Internal helper function that applies the formatter to the log message.
-	 * @param msg The raw log message.
-	 * @returns The formatted log message.
-	 * @access private
-	 */
-	applyFormat(msg: RawLogMessage) {
-		const { args, elements, format, method, ns, ts, uptime } = msg;
-		const formatter = format || defaultFormatter;
-		return formatter(
-			{
-				args,
-				method,
-				ns,
-				elements: {
-					...defaultElements,
-					...elements
-				},
-				ts,
-				uptime
-			},
-			Object.defineProperties(
-				{
-					...ansiStyles,
-					nsToRgb
-				},
-				Object.getOwnPropertyDescriptors(ansiStyles)
-			)
-		);
-	}
-
-	/**
 	 * Internal function that dispatches a log message to all streams and
 	 * SnoopLogg instances.
 	 * @param msg The raw log message.
@@ -438,8 +417,6 @@ export class SnoopLogg extends Functionator {
 	}) {
 		const msg: RawLogMessage = {
 			args,
-			elements: this.elements,
-			format: this.format,
 			id,
 			method,
 			ns,
@@ -448,21 +425,7 @@ export class SnoopLogg extends Functionator {
 		};
 
 		this.history.push(msg);
-
-		if (this.isEnabled(ns)) {
-			const formatted = `${this.applyFormat(msg)}\n`;
-			for (const stream of this.streams.keys()) {
-				// TODO: stream specific formatting? colors, timestamp vs uptime, etc
-
-				stream.write(
-					stream.writableObjectMode
-						? msg
-						: stream.isTTY === false
-							? formatted.replace(stripRegExp, '')
-							: formatted
-				);
-			}
-		}
+		this.writeToStreams(msg);
 
 		if (id === this.id) {
 			globalThis.snooplogg.emit('message', msg);
@@ -553,7 +516,7 @@ export class SnoopLogg extends Functionator {
 	 * @returns The SnoopLogg instance.
 	 * @access public
 	 */
-	pipe(stream: WritableLike, opts: { flush?: boolean } = {}) {
+	pipe(stream: WritableLike, opts: StreamOptions = {}) {
 		if (!stream || typeof stream.write !== 'function') {
 			throw new TypeError('Invalid stream');
 		}
@@ -563,17 +526,18 @@ export class SnoopLogg extends Functionator {
 		}
 
 		const onEnd = () => this.streams.delete(stream);
-		this.streams.set(stream, onEnd);
+		this.streams.set(stream, {
+			colors: opts.colors,
+			elements: opts.elements,
+			format: opts.format,
+			onEnd
+		});
 		stream.on('end', onEnd);
 
 		if (opts.flush) {
 			for (const msg of this.history) {
-				if (msg && this.isEnabled(msg.ns)) {
-					for (const stream of this.streams.keys()) {
-						stream.write(
-							stream.writableObjectMode ? msg : `${this.applyFormat(msg)}\n`
-						);
-					}
+				if (msg) {
+					this.writeToStreams(msg);
 				}
 			}
 		}
@@ -592,9 +556,9 @@ export class SnoopLogg extends Functionator {
 			throw new TypeError('Invalid stream');
 		}
 
-		const onEnd = this.streams.get(stream);
-		if (onEnd) {
-			stream.removeListener('end', onEnd);
+		const config = this.streams.get(stream);
+		if (config?.onEnd) {
+			stream.removeListener('end', config.onEnd);
 			this.streams.delete(stream);
 		}
 
@@ -647,6 +611,56 @@ export class SnoopLogg extends Functionator {
 	}
 
 	/**
+	 * Formats and writes the log message to all streams.
+	 * @param msg The raw log message.
+	 * @access private
+	 */
+	writeToStreams(msg: RawLogMessage) {
+		const { args, method, ns, ts, uptime } = msg;
+		if (this.isEnabled(ns)) {
+			const cache = new Map<typeof defaultFormatter, string>();
+
+			for (const [stream, config] of this.streams.entries()) {
+				if (stream.writableObjectMode) {
+					stream.write(msg);
+					continue;
+				}
+
+				const formatter = config?.format || this.format || defaultFormatter;
+				const colors = config.colors ?? (this.colors && stream.isTTY !== false);
+				let formatted = `${formatter(
+					{
+						args,
+						colors,
+						method,
+						ns,
+						elements: {
+							...defaultElements,
+							...this.elements,
+							...config?.elements
+						},
+						ts,
+						uptime
+					},
+					Object.defineProperties(
+						{
+							...ansiStyles,
+							nsToRgb
+						},
+						Object.getOwnPropertyDescriptors(ansiStyles)
+					)
+				)}\n`;
+
+				if (!colors) {
+					formatted = formatted.replace(stripRegExp, '');
+				}
+
+				stream.write(formatted);
+			}
+		}
+	}
+
+	/**
 	 * Logs a message without a log method.
 	 * @param args The log message arguments.
 	 * @returns The logger instance.
@@ -690,6 +704,7 @@ export class SnoopLogg extends Functionator {
  *
  * @param params - The formatter parameters.
  * @param params.args - The raw arguments passed to the log method.
+ * @param params.colors - Whether to use colors in the log message.
  * @param params.elements - The log formatting elements.
  * @param params.method - The log method name.
  * @param params.ns - The namespace of the logger.
@@ -698,7 +713,7 @@ export class SnoopLogg extends Functionator {
  * @returns The formatted log message.
  */
 export function defaultFormatter(
-	{ args, elements, method, ns, uptime }: LogMessage,
+	{ args, colors, elements, method, ns, uptime }: LogMessage,
 	styles: StyleHelpers
 ) {
 	const prefix = `${elements.uptime(uptime, styles)} ${
@@ -709,7 +724,7 @@ export function defaultFormatter(
 		isJSON(it)
 			? inspect(it, {
 					breakLength: 0,
-					colors: true,
+					colors,
 					depth: 4,
 					showHidden: false
 				})
