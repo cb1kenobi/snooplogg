@@ -36,7 +36,7 @@
     "@biomejs/biome": "1.8.1",
     "@rollup/plugin-node-resolve": "15.2.3",
     "@rollup/plugin-typescript": "11.1.6",
-    "@types/node": "20.14.5",
+    "@types/node": "20.14.6",
     "@vitest/coverage-v8": "1.6.0",
     "ansi-styles": "6.2.1",
     "esbuild": "0.21.5",

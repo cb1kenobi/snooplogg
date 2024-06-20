@@ -17,6 +17,33 @@ specifically designed for CLI programs, daemons, and libraries.
  - Custom log message formatting and styling
  - Pretty stack trace rendering
 
+# Basic Logging
+
+```typescript
+import { log, trace, debug, info, warn, error, panic } from 'snooplogg';
+
+log('This is a log() message');
+trace('This is a trace() message');
+debug('This is a debug() message');
+info('This is a info() message');
+warn('This is a warn() message');
+error('This is a error() message');
+panic('This is a panic() message');
+```
+
+# Logging Ergonomics
+
+SnoopLogg uses the built-in `util.format()` and `util.inspect()` to render messages.
+
+```typescript
+info('My name is %s and my favorite drink is %s', 'Snoop', 'juice');
+
+debug({
+  name: 'Snoop',
+  occupation: 'Logger'
+});
+```
+
 # Demo
 
 ![SnoopLogg](demo/screenshot.png)
