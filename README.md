@@ -4,7 +4,7 @@
 </div>
 <br>
 
-SnoopLogg is a lightweight debug logging library for Node.js and Bun. It is
+SnoopLogg is a lightweight, zero dependency debug logging library for Node.js and Bun. It is
 specifically designed for CLI programs, daemons, and libraries.
 
 # Features
@@ -364,7 +364,7 @@ The number of log messages to buffer. Defaults to `0`.
 
 # Demo
 
-Pull the repo, then run:
+Pull the repo, `pnpm i && pnpm build`, then run:
 
 ```bash
 SNOOPLOGG=* node demo/demo.js
