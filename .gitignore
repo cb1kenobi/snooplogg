@@ -3,6 +3,7 @@
 coverage
 dist
 node_modules
+tmp
 .pnpm-debug.log
 *.tsbuildinfo
 *.tgz

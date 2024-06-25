@@ -2,46 +2,6 @@ import { format } from 'node:util';
 import ansiStyles from 'ansi-styles';
 import snooplogg, { SnoopLogg, info, log } from '../dist/index.js';
 
-////////////////////////////////////////////////////////
-
-console.log('\n\n');
-for (const method of [
-	'log',
-	'trace',
-	'debug',
-	'info',
-	'warn',
-	'error',
-	'panic'
-]) {
-	snooplogg[method](`This is a ${method}() message`);
-}
-
-console.log('\n\n');
-info('My name is %s and my favorite drink is %s', 'Snoop', 'juice');
-snooplogg.debug({
-	name: 'Snoop',
-	occupation: 'Logger',
-	age: 42,
-	todo: ["Log it like it's hot"]
-});
-
-console.log('\n\n');
-// namespaces
-
-console.log('\n\n');
-const instance2 = new SnoopLogg();
-const instance3 = new SnoopLogg();
-snooplogg.snoop('snoop:');
-instance2('foolib').info('Sup from instance 2');
-instance3('barlib').info('Sup from instance 3');
-
-console.log('\n\n');
-
-// 'Nuttin\' but a log thang',
-
-////////////////////////////////////////////////////////
-
 const { cyan, magenta, redBright } = ansiStyles;
 
 console.log(`${magenta.open}Welcome to SnoopLogg demo!${magenta.close}\n`);

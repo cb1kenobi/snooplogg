@@ -108,7 +108,7 @@ export class NanoBuffer<T> {
 	 * @access public
 	 */
 	push(value: T) {
-		if (this._maxSize) {
+		if (this._maxSize > 0) {
 			if (this._size > 0) {
 				this._head++;
 			}

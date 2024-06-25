@@ -109,11 +109,9 @@ export const defaultElements: FormatLogElements = {
 	 * @param styles The ansi-styles module plus the nsToRgb function.
 	 * @returns The formatted logger namespace.
 	 */
-	namespace(ns: string, styles: StyleHelpers) {
+	namespace(ns: string, { color, nsToRgb, rgbToAnsi256 }: StyleHelpers) {
 		const { r, g, b } = nsToRgb(ns);
-		return `${styles.color.ansi256(
-			styles.rgbToAnsi256(r, g, b)
-		)}${ns}${styles.color.close}`;
+		return `${color.ansi256(rgbToAnsi256(r, g, b))}${ns}${color.close}`;
 	},
 
 	/**
@@ -335,6 +333,7 @@ export class SnoopLogg extends Functionator {
 	/**
 	 * Validate and applies the SnoopLogg configuration.
 	 * @param conf The SnoopLogg configuration.
+	 * @param conf.colors When `true`, enables colors in the log messages.
 	 * @param conf.elements A map of log element format functions.
 	 * @param conf.format The log message formatter function.
 	 * @param conf.historySize The maximum number of log messages to store in the history.
@@ -618,8 +617,6 @@ export class SnoopLogg extends Functionator {
 	writeToStreams(msg: RawLogMessage) {
 		const { args, method, ns, ts, uptime } = msg;
 		if (this.isEnabled(ns)) {
-			const cache = new Map<typeof defaultFormatter, string>();
-
 			for (const [stream, config] of this.streams.entries()) {
 				if (stream.writableObjectMode) {
 					stream.write(msg);
@@ -628,6 +625,7 @@ export class SnoopLogg extends Functionator {
 
 				const formatter = config?.format || this.format || defaultFormatter;
 				const colors = config.colors ?? (this.colors && stream.isTTY !== false);
+
 				let formatted = `${formatter(
 					{
 						args,
