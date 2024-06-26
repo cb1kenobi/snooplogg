@@ -1,240 +1,395 @@
-# SnoopLogg
+<br>
+<div align="center">
+	<img width="640" height="240" src="media/SnoopLogg.webp" alt="SnoopLogg">
+</div>
+<br>
 
-[![NPM Version][npm-image]][npm-url]
-[![NPM Downloads][downloads-image]][downloads-url]
+SnoopLogg is a lightweight, zero dependency debug logging library for Node.js
+and Bun. It is specifically designed for CLI programs, daemons, and libraries.
 
-Laid back debug logging.
+SnoopLogg is flexible and capable, but not the best solution for things such as
+logging HTTP server requests, filtering by log level, and web browser console
+is not supported. For CLI apps and libaries, SnoopLogg is the shiz.
 
-## Installation
+# Features
 
-    npm install snooplogg
+ - Snoop on other SnoopLogg instances to aggregate log messages
+ - Pipe log messages to one or more streams (such as a file or socket)
+ - Namespaced and nested namespaced loggers with filtering support
+ - Automatic namespace colorization
+ - Custom log message formatting and styling
+ - Pretty stack trace rendering
+ - Support for object mode streams
+ - Zero dependencies
 
-![snooplogg](demo/screenshot.png)
+# Basic Logging
 
-## Features
+SnoopLogg provides 7 loggers. `log()` is the only one that doesn't print a
+label.
 
- * Built-in and custom log types
- * Ability to snoop on other snooplogg instances nested in dependencies
- * Pipe messages to one or more streams
- * Namespacing
- * Filter messages using the `DEBUG` (or `SNOOPLOGG`) environment variable
- * Automatic color selection with brightness range
- * Exports [chalk](https://www.npmjs.com/pacakge/chalk) library for your convenience.
- * Similar API to [TJ's debug](https://www.npmjs.com/package/debug):
+```javascript
+import { log, trace, debug, info, warn, error, panic } from 'snooplogg';
 
-## Examples
-
-`debug` style:
-
-```js
-// app.js
-
-import snooplogg from 'snooplogg';
-import http from 'http';
-
-// const debug = require('debug')('http');
-const debug = snooplogg('http').log;
-const name = 'My App';
-
-debug('booting %o', name);
-
-http.createServer((req, res) => {
-	debug(`${req.method} ${req.url}`);
-	res.end('hello\n');
-}).listen(3000, () => debug('listening'));
+log('This is a log() message');
+trace('This is a trace() message');
+debug('This is a debug() message');
+info('This is a info() message');
+warn('This is a warn() message');
+error('This is a error() message');
+panic('This is a panic() message');
 ```
 
-```js
-// worker.js
+![Basic Logging](media/01-basic-logging.webp)
 
-import snooplogg from 'snooplogg';
+By default, it prints the time from which the program has started, the log
+method, and the log message. The format is completely customizable.
 
-const a = snooplogg('worker:a');
-const b = snooplogg('worker:b');
-/*
-Or you could do this:
+# Logging Values
 
-const worker = snooplogg('worker');
-const a = worker('a');
-const b = worker('b');
-*/
+SnoopLogg uses the built-in `util.format()` and `util.inspect()` to render
+values.
 
-function work_a() {
-  a('doing lots of uninteresting work');
-  setTimeout(work_a, Math.random() * 1000);
-}
+```javascript
+info('My name is %s and my favorite drink is %s', 'Snoop', 'juice');
 
-work_a();
+debug({
+  name: 'Snoop',
+  occupation: 'Logger'
+});
 
-function work_b() {
-	b('doing some work');
-	setTimeout(work_b, Math.random() * 2000);
-}
-
-work_b();
+error(new Error('This is an error'));
 ```
 
-Standard console usage:
+![Logging Values](media/02-logging-values.webp)
 
-```js
-import log from 'snooplogg';
+# Namespaces
 
-log.trace('bow'); // writes to stdout/stderr if DEBUG matches + all pipes
+The default export is a `snooplogg` instance that can be invoked as a function
+to create a namespaced child logger. You can have as many deeply nested
+namespaces as you'd like.
 
-log.info('wow')
-   .warn('wow')
-   .error('wow');
-```
-
-Namespace support:
-
-```js
+```javascript
 import snooplogg from 'snooplogg';
 
-const log = snooplogg('myapp');
-log.info('bow', 'wow', 'wow'); // writes to stdout/stderr if DEBUG=myapp + all pipes
+snooplogg.info('This is the default namespace');
+
+const fooLogger = snooplogg('foo');
+fooLogger.info('This is the foo namespace');
+
+const barLogger = fooLogger('bar');
+barLogger.info('This is the bar namespace');
+
+const bazLogger = snooplogg('baz');
+bazLogger.info('This is the baz namespace');
 ```
 
-Stream output to stdout:
+![Namespaces](media/03-namespaces.webp)
 
-```js
-import snooplogg from 'snooplogg';
+# Namespace Filtering
 
-const log = snooplogg.stdio('yippy yo');
-log.info('bow', 'wow', 'wow'); // writes to stdout/stderr + all pipes
-
-const log = snooplogg.enable('*')('yippy yay');
-log.info('bow', 'wow', 'wow'); // writes to stdout/stderr + all pipes
-```
-
-Pipe output to a stream (such as a file or socket):
-
-```js
-import snooplogg from 'snooplogg';
-
-const log = snooplogg
-	.pipe(someWritableStream);
-
-log.info('yippy', 'yo');
-```
-
-Listen for messages from all `SnoopLogg` instances, even from other dependencies:
-
-```js
-import snooplogg, { snoop } from 'snooplogg';
-
-snoop();
-
-const log = snooplogg('bumpin');
-
-log('one');
-log
-  .trace('two')
-  .debug('three')
-  .info('and to the four');
-
-log.warn(`It's like this`);
-log.error('and like that');
-log.fatal('and like this');
-```
-
-Custom log types:
-
-```js
-import snooplogg, { type } from 'snooplogg';
-
-type('jin', { color: 'cyan' });
-type('juice', { color: 'yellow' });
-
-const log = snooplogg();
-
-log.jin('parents ain\'t home');
-log.juice('too much drama', true);
-```
-
-Console:
-
-```js
-import snooplogg from 'snooplogg';
-
-snooplogg.enable('*').console.log('dawg gone');
-```
-
-### API
-
-#### `snooplogg()`
-
-Creates a namespaced logger as well as defines the global namespaced logger.
-
-#### `snooplogg.log(msg)`
-
-Outputs a message using the standard `console.log()` format syntax.
-
-#### `snooplogg.config(options)`
-
-Allows you to set various instance specific options.
-
-* `colors` - (Array) An array of color names to choose from when auto-selecting a color,
-  specifically for rendering the namespace.
-* `minBrightness` - (Number) The minimum brightness to auto-select a color. Value must be between 0
-  and 255 as well as less than or equal to the `maxBrightness`. Defaults to `80`.
-* `maxBrightness` - (Number) The maximum brightness to auto-select a color. Value must be between 0
-  and 255 as well as greater than or equal to the `minBrightness`. Defaults to `210`.
-* `theme` - (String) The name of the default theme to use. Defaults to `standard`.
-* `maxBufferSize` - (Number) The maximum number of log lines to buffer. Used to flush prior messages
-  to new pipes.
-
-Returns the original `SnoopLogg` instance.
-
-### Enabling Logging
-
-By default, Snooplogg only prints messages if the the `DEBUG` or `SNOOPLOGG` environment variables
-are set.
+By default, debug logging is suppressed. You must enable it by setting the
+`SNOOPLOGG` (or `DEBUG`) environment variable to the desired filter pattern.
 
 ```bash
-# macOS and Linux
-$ DEBUG=izzle node loggfather.js
-
-# Windows PowerShell
-> $Env:DEBUG="izzle" node loggfather.js
-
-# Windows Command Prompt
-> set DEBUG=izzle
-> node loggfather.js
+$ SNOOPLOGG=* node myscript.js
 ```
 
-> Note: You may also use the `SNOOPLOGG` environment variable to avoid conflicts
-> with other libraries that use [debug](https://www.npmjs.com/package/debug)
+Specifying `*` will display all log messages. The root log methods cannot be
+filtered, only enabled or disabled.
 
-You can also use any environment variable you want by simply calling `enable()` before logging.
+Multiple namespace filters can be specified as a comma separated list.
+Wildcards are supported. Prefix the filter with `-` (dash) to ignore the
+pattern.
 
-```js
-import snooplogg from 'snooplogg';
+```javascript
+const fooLogger = snooplogg('foo');
+fooLogger.info('FOO!');
 
-// change the global environment variable name
-snooplogg.enable(process.env.LOGGFATHER);
+const barLogger = snooplogg('bar');
+barLogger.info('BAR!');
+
+const bazLogger = snooplogg('baz');
+bazLogger.info('BAZ!');
 ```
 
-> Note: The console log types (`info`, `warn`, `error`, etc) are for display only. `snooplogg` does
-> not support log level filtering, only namespace filtering via the `SNOOPLOGG` (or `DEBUG`)
-> environment variable or by `enable()`.
+![Filtering](media/04-filtering.webp)
 
-### Global Defaults
+Note that SnoopLogg does not support "log levels". If you want to filter by
+log method, then you'll need to pipe SnoopLogg into an object mode
+[transform stream](
+  https://nodejs.org/api/stream.html#implementing-a-transform-stream
+) that suppresses unwanted log messages, then pipe that into `stderr`, file,
+etc. See `pipe()` below.
 
-SnoopLogg allows you to set defaults using environment variables that apply to all SnoopLogg
-instances.
+# Snooping
 
-* `SNOOPLOGG_COLOR_LIST` - A comma-separated list of supported color names.
-* `SNOOPLOGG_DEFAULT_THEME` - Sets the `theme`.
-* `SNOOPLOGG_MAX_BUFFER_SIZE` - Sets the `maxBufferSize`.
-* `SNOOPLOGG_MAX_BRIGHTNESS` - Sets the `maxBrightness`.
-* `SNOOPLOGG_MIN_BRIGHTNESS` - Sets the `minBrightness`.
+SnoopLogg allows you to "snoop" or aggregrate log messages from other
+SnoopLogg instances.
+
+For example, say you have an app and a library. The app writes all debug logs
+to disk. You wouldn't necessarily want the library writing debug logs to disk,
+so you can have the app debug logger "snoop" on the library's debug logger.
+
+```
+const app = new SnoopLogg().enable('*').pipe(process.stdout);
+const lib = new SnoopLogg();
+
+app('app').info('This is the app logger and it will snoop on all other loggers');
+lib('lib').info('This is the lib logger, but nothing will be logged');
+app.snoop();
+lib('lib').info(`This is the lib logger and I\'m being snooped`);
+```
+
+![Snoop](media/05-snoop.webp)
+
+You can stop snooping by calling `snooplogg.unsnoop()`.
+
+# Programmatic Instantiation
+
+You can create your own SnoopLogg instances instead of using the default one:
+
+```javascript
+import { SnoopLogg } from 'snooplogg';
+
+const myLogger = new SnoopLogg();
+myLogger.enable('*');
+myLogger.info('Yippee yo!');
+
+const fooLogger = myLogger('foo');
+fooLogger.log('Yippee yay!');
+```
+
+Should you need to, you can also check to see if a specific namespace is
+enabled by calling:
+
+```
+myLogger.isEnabled('foo');
+```
+
+# Piping
+
+You can pipe SnoopLogg into one or more writable streams such as a file.
+
+```javascript
+const out = fs.createWriteStream('debug.log');
+snooplogg.pipe(out);
+snooplogg.info('This will be written to stderr and a file');
+```
+
+`pipe()` also accepts a second argument containing the stream specific
+overrides:
+
+```typescript
+interface StreamOptions {
+  colors?: boolean;
+  elements?: LogElements;
+  flush?: boolean;
+  format?: LogFormatter;
+}
+```
+
+If the history feature is enabled, then you can set the `flush` option to write
+all messages in the history to the new pipe:
+
+```javascript
+snooplogg.pipe(out, { flush: true });
+```
+
+To stop piping to a stream:
+
+```javascript
+snooplogg.unpipe(out);
+```
+
+You can pipe the messages to a transform stream to have complete control over
+each log message:
+
+```javascript
+import { Transform } from 'node:stream';
+
+class MyTransformer extends Transform {
+  constructor(opts = {}) {
+    opts.objectMode = true;
+    super(opts);
+  }
+
+  _transform(msg, enc, cb) {
+    if (msg && typeof msg === 'object' && !(msg instanceof Buffer)) {
+      this.push(JSON.stringify(msg, null, 2));
+    }
+    cb();
+  }
+}
+
+const out = new MyTransformer();
+out.pipe(process.stdout);
+
+const myLogger = new SnoopLogg().enable('*');
+myLogger.pipe(out);
+myLogger.info('Transform me!')
+```
+
+![Transform](media/06-transform.webp)
+
+You can pipe the debug log to as many streams as you like, however each log
+message is formatted per stream. This could impact performance if you have a
+lot of log messages and several streams. Instead, consider piping SnoopLogg to
+a transform stream that in turn pipes to several streams:
+
+```javascript
+import { Transform } from 'node:stream';
+
+class Demuxer extends Transform {
+  _transform(msg, enc, cb) {
+    this.push(msg);
+    cb();
+  }
+}
+
+const demuxer = new Demuxer();
+demuxer.pipe(process.stdout);
+demuxer.pipe(myfile);
+
+myLogger.pipe(demuxer);
+```
+
+# History
+
+SnoopLogg can buffer the previous log messages. By default, this is disabled.
+To enable it, set the history size to the desired value:
+
+```javascript
+snooplogg.config({ historySize: 5 });
+```
+
+The code above will buffer the last 5 messages. To dump the history, you need
+to pipe SnoopLogg to a writable stream and set the `flush: true` flag.
+
+```javascript
+for (let i = 1; i <= 10; i++) {
+	snooplogg.info(`This is message ${i}`);
+}
+
+snooplogg.pipe(process.stdout, { flush: true });
+
+```
+
+![History](media/07-history.webp)
+
+This feature is specifically designed for daemons (e.g. servers) and takes
+inspiration from `adb logcat`.
+
+For example, pretend you have a server running in the background. Now you want
+to see the debug log for when the server is initializes, but by the time you
+connect, those messages are in the past. Don't stress. Simply set the
+`historySize` to something reasonable, then implement a "logcat" route handler
+that pipes the SnoopLogg instance to the connection socket with `flush: true`
+set. SnoopLogg will automatically unpipe the stream when it is ended.
+
+Note that setting a relative large history size may impact performance.
+
+# Config
+
+SnoopLogg has a relatively simple configuration:
+
+```typescript
+interface SnoopLoggConfig {
+	colors?: boolean;
+	elements?: LogElements;
+	format?: LogFormatter | null;
+	historySize?: number;
+}
+```
+
+You can call the `.config()` function to change the default logger or pass the
+config into a new instance.
+
+```javascript
+snooplogg.config({ historySize: 10 });
+```
+
+```javascript
+const myLogger = new SnoopLogg({ historySize: 10 });
+myLogger.config({ historySize: 20 });
+```
+
+We'll discuss these settings in more detail below.
+
+## `colors`
+
+Set this flag to `false` to to disable colors. Colors are enabled by default
+unless overwritten by the stream settings or the stream is not a TTY.
+
+## `elements`
+
+You can pass in an object with overrides for any of the element specific
+renderers.
+
+```typescript
+type FormatLogElements = {
+	error: (err: Error, styles: StyleHelpers) => string;
+	message: (msg: string, method: string, styles: StyleHelpers) => string;
+	method: (name: string, styles: StyleHelpers) => string;
+	namespace: (ns: string, styles: StyleHelpers) => string;
+	timestamp: (ts: Date, styles: StyleHelpers) => string;
+	uptime: (uptime: number, styles: StyleHelpers) => string;
+};
+```
+
+Each element formatter is passed a `styles` object containing the contents of
+the [ansi-styles](https://github.com/chalk/ansi-styles) package. It also
+includes the `nsToRgb(string)` function which deterministically finds a color
+based on the supplied string where the color is not too light or too dark.
+
+```javascript
+snooplogg.config({
+  elements: {
+    namespace(ns, { color, nsToRgb, rgbToAnsi256 }) {
+      const { r, g, b } = nsToRgb(ns);
+      return `${color.ansi256(
+        rgbToAnsi256(r, g, b)
+      )}${ns}${color.close}`;
+    }
+  }
+});
+```
+
+## `format()`
+
+A custom formatter that renders a log message.
+
+```javascript
+snooplogg.info('This is the default format');
+
+snooplogg.config({
+  format(msg, styles) {
+    const { args, colors, elements, method, ns, ts, uptime } = msg;
+    return `${ts.toISOString()} [${method}] ${args.join(' ')}`;
+  }
+});
+
+snooplogg.info('This is the custom format');
+```
+
+![Format](media/08-format.webp)
+
+## `historySize`
+
+The number of log messages to buffer. Defaults to `0`. Pipe SnoopLogg to a
+writable stream with `{ flush: true }` to see the buffered messages.
+
+# Demo
+
+Pull the repo, `pnpm i && pnpm build`, then run:
+
+```bash
+SNOOPLOGG=* node demo/demo.js
+
+# or
+
+SNOOPLOGG=* bun demo/demo.js
+```
 
 ## License
 
 MIT
-
-[npm-image]: https://img.shields.io/npm/v/snooplogg.svg
-[npm-url]: https://npmjs.org/package/snooplogg
-[downloads-image]: https://img.shields.io/npm/dm/snooplogg.svg
-[downloads-url]: https://npmjs.org/package/snooplogg
