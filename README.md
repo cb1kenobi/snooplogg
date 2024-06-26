@@ -4,18 +4,23 @@
 </div>
 <br>
 
-SnoopLogg is a lightweight, zero dependency debug logging library for Node.js and Bun. It is
-specifically designed for CLI programs, daemons, and libraries.
+SnoopLogg is a lightweight, zero dependency debug logging library for Node.js
+and Bun. It is specifically designed for CLI programs, daemons, and libraries.
+
+SnoopLogg is flexible and capable, but not the best solution for things such as
+logging HTTP server requests, filtering by log level, and web browser console
+is not supported. For CLI apps and libaries, SnoopLogg is the shiz.
 
 # Features
 
- - Snoop on other nested SnoopLogg instances combining them
- - Pipe messages to one or more streams (such as a file or socket)
+ - Snoop on other SnoopLogg instances to aggregate log messages
+ - Pipe log messages to one or more streams (such as a file or socket)
  - Namespaced and nested namespaced loggers with filtering support
  - Automatic namespace colorization
  - Custom log message formatting and styling
  - Pretty stack trace rendering
  - Support for object mode streams
+ - Zero dependencies
 
 # Basic Logging
 
@@ -36,9 +41,13 @@ panic('This is a panic() message');
 
 ![Basic Logging](media/01-basic-logging.webp)
 
+By default, it prints the time from which the program has started, the log
+method, and the log message. The format is completely customizable.
+
 # Logging Values
 
-SnoopLogg uses the built-in `util.format()` and `util.inspect()` to render values.
+SnoopLogg uses the built-in `util.format()` and `util.inspect()` to render
+values.
 
 ```javascript
 info('My name is %s and my favorite drink is %s', 'Snoop', 'juice');
@@ -61,7 +70,8 @@ namespaces as you'd like.
 
 ```javascript
 import snooplogg from 'snooplogg';
-info('This is the default namespace');
+
+snooplogg.info('This is the default namespace');
 
 const fooLogger = snooplogg('foo');
 fooLogger.info('This is the foo namespace');
@@ -77,14 +87,14 @@ bazLogger.info('This is the baz namespace');
 
 # Namespace Filtering
 
-By default, debug logging is suppressed. You must enable it using the
-`SNOOPLOGG` (or `DEBUG`) environment variable to set the filter.
+By default, debug logging is suppressed. You must enable it by setting the
+`SNOOPLOGG` (or `DEBUG`) environment variable to the desired filter pattern.
 
 ```bash
 $ SNOOPLOGG=* node myscript.js
 ```
 
-Specifying `*` will display all log messages. The default log methods cannot be
+Specifying `*` will display all log messages. The root log methods cannot be
 filtered, only enabled or disabled.
 
 Multiple namespace filters can be specified as a comma separated list.
@@ -104,11 +114,12 @@ bazLogger.info('BAZ!');
 
 ![Filtering](media/04-filtering.webp)
 
-Note that SnoopLogg does _not_ support "log levels". If you want to filter by
+Note that SnoopLogg does not support "log levels". If you want to filter by
 log method, then you'll need to pipe SnoopLogg into an object mode
 [transform stream](
   https://nodejs.org/api/stream.html#implementing-a-transform-stream
-), then pipe that into `stderr`, file, etc. See `pipe()` below.
+) that suppresses unwanted log messages, then pipe that into `stderr`, file,
+etc. See `pipe()` below.
 
 # Snooping
 
@@ -126,7 +137,7 @@ const lib = new SnoopLogg();
 app('app').info('This is the app logger and it will snoop on all other loggers');
 lib('lib').info('This is the lib logger, but nothing will be logged');
 app.snoop();
-lib('lib').info('This is the lib logger and I\'m being snooped');
+lib('lib').info(`This is the lib logger and I\'m being snooped`);
 ```
 
 ![Snoop](media/05-snoop.webp)
@@ -165,7 +176,8 @@ snooplogg.pipe(out);
 snooplogg.info('This will be written to stderr and a file');
 ```
 
-`pipe()` also accepts a second argument containing the stream specific overrides:
+`pipe()` also accepts a second argument containing the stream specific
+overrides:
 
 ```typescript
 interface StreamOptions {
@@ -268,15 +280,17 @@ This feature is specifically designed for daemons (e.g. servers) and takes
 inspiration from `adb logcat`.
 
 For example, pretend you have a server running in the background. Now you want
-to see the debug log for when the server is initializes. This can be achieved
-by setting the `historySize` and implementing a "logcat" route handler that
-pipes the SnoopLogg instance to the socket with `flush: true` set.
+to see the debug log for when the server is initializes, but by the time you
+connect, those messages are in the past. Don't stress. Simply set the
+`historySize` to something reasonable, then implement a "logcat" route handler
+that pipes the SnoopLogg instance to the connection socket with `flush: true`
+set. SnoopLogg will automatically unpipe the stream when it is ended.
 
 Note that setting a relative large history size may impact performance.
 
 # Config
 
-SnoopLogg has a simple configuration:
+SnoopLogg has a relatively simple configuration:
 
 ```typescript
 interface SnoopLoggConfig {
@@ -303,12 +317,13 @@ We'll discuss these settings in more detail below.
 
 ## `colors`
 
-Set this flag to `false` to to disable colors. Colors are enabled by default unless
-overwritten by the stream settings or the stream is not a TTY.
+Set this flag to `false` to to disable colors. Colors are enabled by default
+unless overwritten by the stream settings or the stream is not a TTY.
 
 ## `elements`
 
-You can pass in an object with overrides for any of the element specific renderers.
+You can pass in an object with overrides for any of the element specific
+renderers.
 
 ```typescript
 type FormatLogElements = {
@@ -323,8 +338,8 @@ type FormatLogElements = {
 
 Each element formatter is passed a `styles` object containing the contents of
 the [ansi-styles](https://github.com/chalk/ansi-styles) package. It also
-includes the `nsToRgb(string)` function which deterministically finds a color based
-on the supplied string where the color is not too light or too dark.
+includes the `nsToRgb(string)` function which deterministically finds a color
+based on the supplied string where the color is not too light or too dark.
 
 ```javascript
 snooplogg.config({
@@ -360,7 +375,8 @@ snooplogg.info('This is the custom format');
 
 ## `historySize`
 
-The number of log messages to buffer. Defaults to `0`.
+The number of log messages to buffer. Defaults to `0`. Pipe SnoopLogg to a
+writable stream with `{ flush: true }` to see the buffered messages.
 
 # Demo
 
