@@ -165,7 +165,7 @@ class Functionator extends Function {
  * The logger represents a namespace and can have a single parent and multiple
  * child namespaces.
  */
-class Logger extends Functionator {
+export class Logger extends Functionator {
 	_log: LogMethod | undefined;
 	_trace: LogMethod | undefined;
 	_debug: LogMethod | undefined;
