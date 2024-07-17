@@ -1,4 +1,4 @@
-# v6.0.0
+# v6.0.0 (July 16, 2024)
 
  * BREAKING CHANGE: Require Node.js 18.17.0 or newer
  * BREAKING CHANGE: Removed support for custom log methods
