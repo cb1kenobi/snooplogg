@@ -34,7 +34,7 @@
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.8.3",
+    "@biomejs/biome": "1.9.0",
     "@rollup/plugin-node-resolve": "15.2.3",
     "@rollup/plugin-typescript": "11.1.6",
     "@types/node": "22.5.4",
