@@ -35,7 +35,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.2",
-    "@rollup/plugin-node-resolve": "15.2.3",
+    "@rollup/plugin-node-resolve": "15.2.4",
     "@rollup/plugin-typescript": "11.1.6",
     "@types/node": "22.5.5",
     "@vitest/coverage-v8": "2.0.5",
