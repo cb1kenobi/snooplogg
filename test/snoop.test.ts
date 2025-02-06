@@ -381,17 +381,13 @@ describe('SnoopLogg', () => {
 			expect(() => {
 				instance('foo, bar');
 			}).toThrowError(
-				new TypeError(
-					'Namespace cannot contain spaces, commas, or pipe characters'
-				)
+				new Error('Namespace cannot contain spaces, commas, or pipe characters')
 			);
 
 			expect(() => {
 				instance('foo | bar');
 			}).toThrowError(
-				new TypeError(
-					'Namespace cannot contain spaces, commas, or pipe characters'
-				)
+				new Error('Namespace cannot contain spaces, commas, or pipe characters')
 			);
 		});
 	});
