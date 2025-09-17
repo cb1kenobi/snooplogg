@@ -42,7 +42,7 @@
     "esbuild": "0.25.9",
     "lefthook": "1.13.0",
     "memory-streams": "0.1.3",
-    "oxlint": "1.15.0",
+    "oxlint": "1.16.0",
     "rimraf": "6.0.1",
     "rollup": "4.50.2",
     "rollup-plugin-dts": "6.2.3",
