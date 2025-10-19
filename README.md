@@ -4,8 +4,9 @@
 </div>
 <br>
 
-SnoopLogg is a lightweight, zero dependency debug logging library for Node.js
-and Bun. It is specifically designed for CLI programs, daemons, and libraries.
+SnoopLogg is a lightweight, zero dependency debug logging library for Node.js,
+Bun, and Deno. It is specifically designed for CLI programs, daemons, and
+libraries.
 
 SnoopLogg is flexible and capable, but it's not the best solution for things
 such as logging HTTP server requests, filtering by log level, and web browser
