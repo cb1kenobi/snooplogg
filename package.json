@@ -2,8 +2,12 @@
   "name": "snooplogg",
   "version": "6.0.2",
   "description": "Your mind on your logs and your logs on your mind",
-  "type": "module",
   "main": "./dist/index.cjs",
+  "author": {
+    "name": "Chris Barber",
+    "email": "me@chrisbarber.dev"
+  },
+  "type": "module",
   "module": "./dist/index.js",
   "exports": {
     ".": {
@@ -12,7 +16,6 @@
       "require": "./dist/index.cjs"
     }
   },
-  "author": "Chris Barber <chris@cb1inc.com> (https://github.com/cb1kenobi)",
   "license": "MIT",
   "keywords": [
     "log",
@@ -56,8 +59,16 @@
     "dist"
   ],
   "homepage": "https://github.com/cb1kenobi/snooplogg",
-  "bugs": "https://github.com/cb1kenobi/snooplogg/issues",
-  "repository": "https://github.com/cb1kenobi/snooplogg",
+  "bugs": [
+    {
+      "type": "link",
+      "url": "https://github.com/cb1kenobi/snooplogg/issues"
+    }
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cb1kenobi/snooplogg"
+  },
   "engines": {
     "node": ">=18.17"
   }
