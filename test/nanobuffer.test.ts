@@ -208,6 +208,6 @@ describe('NanoBuffer', () => {
 			r = it.next();
 		}
 
-		expect(r.value).to.be.undefined;
+		expect(r.value).toBeUndefined();
 	});
 });
