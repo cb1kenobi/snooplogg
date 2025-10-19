@@ -50,16 +50,15 @@ jobs:
       with:
         node-version: ${{ matrix.node == 18 && 20 || matrix.node }}
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
+    - name: Setup dependencies
+      uses: ./.github/actions/setup-deps
       with:
-        version: latest
+        gh-token: ${{ secrets.GH_TOKEN }}
 
-    - name: Install dependencies
-      run: pnpm install
-
-    - name: Lint
-      run: pnpm lint
+    - name: Build
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      run: pnpm build
 
     - name: Install Node 18
       if: matrix.node == 18

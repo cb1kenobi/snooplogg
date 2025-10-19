@@ -1,0 +1,19 @@
+name: 'Setup Dependencies'
+description: 'Setup pnpm and install dependencies'
+
+inputs:
+  gh-token:
+    description: 'GitHub token for authentication'
+    required: true
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup pnpm
+      uses: ./.github/actions/setup-pnpm
+
+    - name: Install dependencies
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.gh-token }}
+      run: pnpm install --frozen-lockfile --ignore-scripts
