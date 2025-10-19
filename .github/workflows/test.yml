@@ -7,9 +7,33 @@ on:
     branches:
       - main
 
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
+
 jobs:
-  test:
-    name: Test on node ${{ matrix.node }} and ${{ matrix.os }}
+  checks:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          gh-token: ${{ secrets.GH_TOKEN }}
+
+      - name: Check
+        run: pnpm check
+
+  node-test:
+    name: Test on Node.js ${{ matrix.node }} and ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -24,18 +48,83 @@ jobs:
     - name: Use Node.js ${{ matrix.node }}
       uses: actions/setup-node@v4
       with:
-        node-version: ${{ matrix.node }}
+        node-version: ${{ matrix.node == 18 && 20 || matrix.node }}
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
+    - name: Setup dependencies
+      uses: ./.github/actions/setup-deps
       with:
-        version: latest
+        gh-token: ${{ secrets.GH_TOKEN }}
 
-    - name: Install dependencies
-      run: pnpm install
+    - name: Build
+      env:
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      run: pnpm build
 
-    - name: Lint
-      run: pnpm lint
+    - name: Install Node 18
+      if: matrix.node == 18
+      uses: actions/setup-node@v4
+      with:
+        node-version: 18
 
     - name: Run tests
       run: pnpm coverage
+
+  bun-test:
+    name: Test on Bun
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          gh-token: ${{ secrets.GH_TOKEN }}
+
+      - name: Build
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: pnpm build
+
+      - name: Run tests on Bun
+        run: pnpm test:bun
+
+  deno-test:
+    name: Test on Deno
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: latest
+
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          gh-token: ${{ secrets.GH_TOKEN }}
+
+      - name: Build
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: pnpm build
+
+      - name: Run tests on Deno
+        run: pnpm test:deno

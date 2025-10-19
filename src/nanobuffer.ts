@@ -45,7 +45,7 @@ export class NanoBuffer<T> {
 	 * @returns The index of the newest value in the buffer.
 	 * @access public
 	 */
-	get head() {
+	get head(): number {
 		return this._head;
 	}
 
@@ -54,7 +54,7 @@ export class NanoBuffer<T> {
 	 * @returns The max size of the buffer.
 	 * @access public
 	 */
-	get maxSize() {
+	get maxSize(): number {
 		return this._maxSize;
 	}
 
@@ -63,7 +63,7 @@ export class NanoBuffer<T> {
 	 * @param new_maxSize The new max size of the buffer.
 	 * @access public
 	 */
-	set maxSize(new_maxSize) {
+	set maxSize(new_maxSize: number) {
 		if (typeof new_maxSize !== 'number') {
 			throw new TypeError('Expected max size to be a number');
 		}
@@ -97,7 +97,7 @@ export class NanoBuffer<T> {
 	 * @returns The size of the buffer.
 	 * @access public
 	 */
-	get size() {
+	get size(): number {
 		return this._size;
 	}
 
@@ -107,7 +107,7 @@ export class NanoBuffer<T> {
 	 * @returns The NanoBuffer instance.
 	 * @access public
 	 */
-	push(value: T) {
+	push(value: T): this {
 		if (this._maxSize > 0) {
 			if (this._size > 0) {
 				this._head++;
@@ -130,7 +130,7 @@ export class NanoBuffer<T> {
 	 * @returns The NanoBuffer instance.
 	 * @access public
 	 */
-	clear() {
+	clear(): this {
 		this.buffer = Array(this._maxSize);
 		this._head = 0;
 		this._size = 0;
@@ -142,13 +142,18 @@ export class NanoBuffer<T> {
 	 * @return An iterator function.
 	 * @access public
 	 */
-	[Symbol.iterator]() {
+	[Symbol.iterator](): Iterator<T> {
 		let i = 0;
 
 		return {
 			next: () => {
 				// just in case the size changed
 				i = Math.min(i, this._maxSize);
+
+				if (i >= this._size) {
+					i++;
+					return { value: undefined, done: true };
+				}
 
 				// calculate the index
 				let j = this.head + i - (this._size - 1);
@@ -158,11 +163,8 @@ export class NanoBuffer<T> {
 
 				// console.log('\ni=' + i + ' head=' + this._head + ' size=' + this._size + ' maxSize=' + this._maxSize + ' j=' + j);
 
-				const done = i++ >= this._size;
-				return {
-					value: done ? undefined : this.buffer[j],
-					done
-				};
+				i++;
+				return { value: this.buffer[j], done: false };
 			}
 		};
 	}
