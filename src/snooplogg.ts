@@ -142,7 +142,7 @@ const pattern = [
 	'[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\\u0007)',
 	'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))'
 ].join('|');
-export const stripRegExp = new RegExp(pattern, 'g');
+export const stripRegExp: RegExp = new RegExp(pattern, 'g');
 
 /**
  * The secret sauce.
@@ -218,7 +218,7 @@ export class Logger extends Functionator {
 	 * @returns A new child logger instance.
 	 * @access public
 	 */
-	initChild(namespace: string) {
+	initChild(namespace: string): Logger {
 		if (!this.subnamespaces[namespace]) {
 			this.subnamespaces[namespace] = new Logger(this.root, this, namespace);
 		}
@@ -232,7 +232,7 @@ export class Logger extends Functionator {
 	 * @access private
 	 */
 	initMethod(method: string) {
-		return (...args: unknown[]) => {
+		return (...args: unknown[]): Logger => {
 			this.root.dispatch({
 				args,
 				method,
@@ -250,49 +250,49 @@ export class Logger extends Functionator {
 	 * @returns The logger instance.
 	 * @access public
 	 */
-	get log() {
+	get log(): LogMethod {
 		if (!this._log) {
 			this._log = this.initMethod('log');
 		}
 		return this._log;
 	}
 
-	get trace() {
+	get trace(): LogMethod {
 		if (!this._trace) {
 			this._trace = this.initMethod('trace');
 		}
 		return this._trace;
 	}
 
-	get debug() {
+	get debug(): LogMethod {
 		if (!this._debug) {
 			this._debug = this.initMethod('debug');
 		}
 		return this._debug;
 	}
 
-	get info() {
+	get info(): LogMethod {
 		if (!this._info) {
 			this._info = this.initMethod('info');
 		}
 		return this._info;
 	}
 
-	get warn() {
+	get warn(): LogMethod {
 		if (!this._warn) {
 			this._warn = this.initMethod('warn');
 		}
 		return this._warn;
 	}
 
-	get error() {
+	get error(): LogMethod {
 		if (!this._error) {
 			this._error = this.initMethod('error');
 		}
 		return this._error;
 	}
 
-	get panic() {
+	get panic(): LogMethod {
 		if (!this._panic) {
 			this._panic = this.initMethod('panic');
 		}
@@ -311,11 +311,11 @@ export class SnoopLogg extends Functionator {
 	elements: LogElements = {};
 	format?: LogFormatter | null;
 	history: NanoBuffer<RawLogMessage> = new NanoBuffer();
-	id = Math.round(Math.random() * 1e9);
+	id: number = Math.round(Math.random() * 1e9);
 	ignore: RegExp | null = null;
 	onSnoopMessage: ((msg: RawLogMessage) => void) | null = null;
 	logger: Logger;
-	streams = new Map<WritableLike, StreamConfig>();
+	streams: Map<WritableLike, StreamConfig> = new Map();
 
 	/**
 	 * Initializes the initial logger instance and configuration.
@@ -340,7 +340,7 @@ export class SnoopLogg extends Functionator {
 	 * @returns The SnoopLogg instance.
 	 * @access private
 	 */
-	config(conf: SnoopLoggConfig = {}) {
+	config(conf: SnoopLoggConfig = {}): this {
 		if (typeof conf !== 'object') {
 			throw new TypeError('Expected logger options to be an object');
 		}
@@ -413,7 +413,7 @@ export class SnoopLogg extends Functionator {
 		ns: string;
 		ts: Date;
 		uptime: number;
-	}) {
+	}): void {
 		const msg: RawLogMessage = {
 			args,
 			id,
@@ -441,7 +441,7 @@ export class SnoopLogg extends Functionator {
 	 * @returns The SnoopLogg instance.
 	 * @access public
 	 */
-	enable(pattern: string | RegExp = '') {
+	enable(pattern: string | RegExp = ''): this {
 		if (typeof pattern !== 'string' && !(pattern instanceof RegExp)) {
 			throw new TypeError('Expected pattern to be a string or regex');
 		}
@@ -486,7 +486,7 @@ export class SnoopLogg extends Functionator {
 	 * @returns `true` if the namespace is enabled, otherwise `false`.
 	 * @access public
 	 */
-	isEnabled(namespace: string) {
+	isEnabled(namespace: string): boolean {
 		const allow = this.allow;
 		if (allow === null) {
 			// all logging is silenced
@@ -515,7 +515,7 @@ export class SnoopLogg extends Functionator {
 	 * @returns The SnoopLogg instance.
 	 * @access public
 	 */
-	pipe(stream: WritableLike, opts: StreamOptions = {}) {
+	pipe(stream: WritableLike, opts: StreamOptions = {}): this {
 		if (!stream || typeof stream.write !== 'function') {
 			throw new TypeError('Invalid stream');
 		}
@@ -550,7 +550,7 @@ export class SnoopLogg extends Functionator {
 	 * @returns The SnoopLogg instance.
 	 * @access public
 	 */
-	unpipe(stream: WritableLike) {
+	unpipe(stream: WritableLike): this {
 		if (!stream || typeof stream.write !== 'function') {
 			throw new TypeError('Invalid stream');
 		}
@@ -571,7 +571,7 @@ export class SnoopLogg extends Functionator {
 	 * @returns The SnoopLogg instance.
 	 * @access public
 	 */
-	snoop(nsPrefix?: string) {
+	snoop(nsPrefix?: string): this {
 		if (nsPrefix !== undefined && typeof nsPrefix !== 'string') {
 			throw new TypeError('Expected namespace prefix to be a string');
 		}
@@ -601,7 +601,7 @@ export class SnoopLogg extends Functionator {
 	 * @returns The SnoopLogg instance.
 	 * @access public
 	 */
-	unsnoop() {
+	unsnoop(): this {
 		if (this.onSnoopMessage) {
 			globalThis.snooplogg.off('message', this.onSnoopMessage);
 			this.onSnoopMessage = null;
@@ -614,7 +614,7 @@ export class SnoopLogg extends Functionator {
 	 * @param msg The raw log message.
 	 * @access private
 	 */
-	writeToStreams(msg: RawLogMessage) {
+	writeToStreams(msg: RawLogMessage): void {
 		const { args, method, ns, ts, uptime } = msg;
 		if (this.isEnabled(ns)) {
 			for (const [stream, config] of this.streams.entries()) {
@@ -664,31 +664,31 @@ export class SnoopLogg extends Functionator {
 	 * @returns The logger instance.
 	 * @access public
 	 */
-	get log() {
+	get log(): LogMethod {
 		return this.logger.log;
 	}
 
-	get trace() {
+	get trace(): LogMethod {
 		return this.logger.trace;
 	}
 
-	get debug() {
+	get debug(): LogMethod {
 		return this.logger.debug;
 	}
 
-	get info() {
+	get info(): LogMethod {
 		return this.logger.info;
 	}
 
-	get warn() {
+	get warn(): LogMethod {
 		return this.logger.warn;
 	}
 
-	get error() {
+	get error(): LogMethod {
 		return this.logger.error;
 	}
 
-	get panic() {
+	get panic(): LogMethod {
 		return this.logger.panic;
 	}
 }
@@ -713,7 +713,7 @@ export class SnoopLogg extends Functionator {
 export function defaultFormatter(
 	{ args, colors, elements, method, ns, uptime }: LogMessage,
 	styles: StyleHelpers
-) {
+): string {
 	const prefix = `${elements.uptime(uptime, styles)} ${
 		ns ? `${elements.namespace(ns, styles)} ` : ''
 	}${method && method !== 'log' ? `${elements.method(method, styles)} ` : ''}`;

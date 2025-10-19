@@ -1,3 +1,15 @@
+# v6.1.0
+
+ * chore: Replace rollup with rolldown (tsdown)
+
+# v6.0.2 (October 14, 2025)
+
+ * chore: Updated dependencies
+
+# v6.0.1 (June 24, 2025)
+
+ * chore: Updated dependencies
+
 # v6.0.0 (July 16, 2024)
 
  * BREAKING CHANGE: Require Node.js 18.17.0 or newer
