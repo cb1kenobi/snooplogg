@@ -30,6 +30,8 @@
     "lint": "oxlint",
     "prepublishOnly": "pnpm run build",
     "test": "vitest",
+    "test:bun": "bun --bun test --config=bunfig.toml",
+    "test:deno": "deno run --allow-all --sloppy-imports ./node_modules/vitest/vitest.mjs",
     "test-no-tty": "node -e \"try { console.log(require('child_process').execSync('pnpm coverage').toString()); } catch (e) { console.log(e, e.stdout.toString()); console.log(e.stderr.toString()); }\"",
     "type-check": "tsc --noEmit"
   },
