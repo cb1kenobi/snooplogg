@@ -9,35 +9,22 @@ updates:
       interval: "daily"
       time: "02:34"
     groups:
-      patch:
+      production:
+        dependency-type: "production"
         patterns:
           - "*"
         update-types:
+          - "major"
+          - "minor"
           - "patch"
-      minor-production:
-        dependency-type: "production"
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-      minor-development:
-        dependency-type: "development"
-        patterns:
-          - "*"
-        update-types:
-          - "minor"
-      major-production:
-        dependency-type: "production"
-        patterns:
-          - "*"
-        update-types:
-          - "major"
-      major-development:
+      development:
         dependency-type: "development"
         patterns:
           - "*"
         update-types:
           - "major"
+          - "minor"
+          - "patch"
     commit-message:
       include: "scope"
       prefix: "chore(deps): "
