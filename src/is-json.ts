@@ -1,3 +1,6 @@
+/**
+ * Detects if a value is a plain object.
+ */
 export function isJSON(it: unknown): boolean {
 	if (it === null || typeof it !== 'object') {
 		return false;

@@ -1,3 +1,7 @@
+# v6.1.0
+
+ * Switch from Node.js EventEmitter to a lightweight browser-compatible version
+
 # v6.0.3 (October 19, 2025)
 
  * chore: Replace rollup with rolldown (tsdown)

@@ -1,4 +1,4 @@
-import { EventEmitter } from 'node:events';
+import { EventEmitter } from './events.js';
 import { SnoopLogg } from './snooplogg.js';
 
 export * from './is-json.js';
