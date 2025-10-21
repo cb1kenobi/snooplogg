@@ -3,17 +3,20 @@ import ansiStyles from 'ansi-styles';
 import { isJSON } from './is-json.js';
 import { NanoBuffer } from './nanobuffer.js';
 import { nsToRgb } from './ns-to-rgb.js';
-import type {
-	FormatLogElements,
-	LogElements,
-	LogFormatter,
-	LogMessage,
-	RawLogMessage,
-	SnoopLoggConfig,
-	StreamConfig,
-	StreamOptions,
-	StyleHelpers,
-	WritableLike
+import {
+	logLevels,
+	type FormatLogElements,
+	type LogElements,
+	type LogFormatter,
+	type LogLevel,
+	type LogLevelValue,
+	type LogMessage,
+	type RawLogMessage,
+	type SnoopLoggConfig,
+	type StreamConfig,
+	type StreamOptions,
+	type StyleHelpers,
+	type WritableLike,
 } from './types.js';
 
 /**
@@ -166,13 +169,13 @@ class Functionator extends Function {
  * child namespaces.
  */
 export class Logger extends Functionator {
-	_log: LogMethod | undefined;
-	_trace: LogMethod | undefined;
-	_debug: LogMethod | undefined;
-	_info: LogMethod | undefined;
-	_warn: LogMethod | undefined;
-	_error: LogMethod | undefined;
-	_panic: LogMethod | undefined;
+	#trace: LogMethod | undefined;
+	#debug: LogMethod | undefined;
+	#log: LogMethod | undefined;
+	#info: LogMethod | undefined;
+	#warn: LogMethod | undefined;
+	#error: LogMethod | undefined;
+	#panic: LogMethod | undefined;
 	ns: string;
 	nsPath: string[];
 	root: SnoopLogg;
@@ -231,10 +234,11 @@ export class Logger extends Functionator {
 	 * @returns A new log method.
 	 * @access private
 	 */
-	initMethod(method: string) {
+	#initMethod(method: string) {
 		return (...args: unknown[]): Logger => {
 			this.root.dispatch({
 				args,
+				level: logLevels[method as LogLevel] || 0,
 				method,
 				ns: this.ns,
 				ts: new Date(),
@@ -251,52 +255,52 @@ export class Logger extends Functionator {
 	 * @access public
 	 */
 	get log(): LogMethod {
-		if (!this._log) {
-			this._log = this.initMethod('log');
+		if (!this.#log) {
+			this.#log = this.#initMethod('log');
 		}
-		return this._log;
+		return this.#log;
 	}
 
 	get trace(): LogMethod {
-		if (!this._trace) {
-			this._trace = this.initMethod('trace');
+		if (!this.#trace) {
+			this.#trace = this.#initMethod('trace');
 		}
-		return this._trace;
+		return this.#trace;
 	}
 
 	get debug(): LogMethod {
-		if (!this._debug) {
-			this._debug = this.initMethod('debug');
+		if (!this.#debug) {
+			this.#debug = this.#initMethod('debug');
 		}
-		return this._debug;
+		return this.#debug;
 	}
 
 	get info(): LogMethod {
-		if (!this._info) {
-			this._info = this.initMethod('info');
+		if (!this.#info) {
+			this.#info = this.#initMethod('info');
 		}
-		return this._info;
+		return this.#info;
 	}
 
 	get warn(): LogMethod {
-		if (!this._warn) {
-			this._warn = this.initMethod('warn');
+		if (!this.#warn) {
+			this.#warn = this.#initMethod('warn');
 		}
-		return this._warn;
+		return this.#warn;
 	}
 
 	get error(): LogMethod {
-		if (!this._error) {
-			this._error = this.initMethod('error');
+		if (!this.#error) {
+			this.#error = this.#initMethod('error');
 		}
-		return this._error;
+		return this.#error;
 	}
 
 	get panic(): LogMethod {
-		if (!this._panic) {
-			this._panic = this.initMethod('panic');
+		if (!this.#panic) {
+			this.#panic = this.#initMethod('panic');
 		}
-		return this._panic;
+		return this.#panic;
 	}
 }
 
@@ -313,6 +317,7 @@ export class SnoopLogg extends Functionator {
 	history: NanoBuffer<RawLogMessage> = new NanoBuffer();
 	id: number = Math.round(Math.random() * 1e9);
 	ignore: RegExp | null = null;
+	logLevel: LogLevelValue = logLevels.trace;
 	onSnoopMessage: ((msg: RawLogMessage) => void) | null = null;
 	logger: Logger;
 	streams: Map<WritableLike, StreamConfig> = new Map();
@@ -402,6 +407,7 @@ export class SnoopLogg extends Functionator {
 	dispatch({
 		args,
 		id = this.id,
+		level,
 		method,
 		ns,
 		ts,
@@ -409,6 +415,7 @@ export class SnoopLogg extends Functionator {
 	}: {
 		args: unknown[];
 		id?: number;
+		level: LogLevelValue;
 		method: string;
 		ns: string;
 		ts: Date;
@@ -417,6 +424,7 @@ export class SnoopLogg extends Functionator {
 		const msg: RawLogMessage = {
 			args,
 			id,
+			level,
 			method,
 			ns,
 			ts,
@@ -615,7 +623,7 @@ export class SnoopLogg extends Functionator {
 	 * @access private
 	 */
 	writeToStreams(msg: RawLogMessage): void {
-		const { args, method, ns, ts, uptime } = msg;
+		const { args, level, method, ns, ts, uptime } = msg;
 		if (this.isEnabled(ns)) {
 			for (const [stream, config] of this.streams.entries()) {
 				if (stream.writableObjectMode) {
@@ -630,13 +638,14 @@ export class SnoopLogg extends Functionator {
 					{
 						args,
 						colors,
-						method,
-						ns,
 						elements: {
 							...defaultElements,
 							...this.elements,
 							...config?.elements
 						},
+						level,
+						method,
+						ns,
 						ts,
 						uptime
 					},
@@ -664,16 +673,16 @@ export class SnoopLogg extends Functionator {
 	 * @returns The logger instance.
 	 * @access public
 	 */
-	get log(): LogMethod {
-		return this.logger.log;
-	}
-
 	get trace(): LogMethod {
 		return this.logger.trace;
 	}
 
 	get debug(): LogMethod {
 		return this.logger.debug;
+	}
+
+	get log(): LogMethod {
+		return this.logger.log;
 	}
 
 	get info(): LogMethod {

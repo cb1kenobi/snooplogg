@@ -27,6 +27,19 @@ export type FormatLogElements = {
 
 export type LogElements = Partial<FormatLogElements>;
 
+export const logLevels = {
+	trace: 10,
+	debug: 20,
+	log: 30,
+	info: 40,
+	warn: 50,
+	error: 60,
+	panic: 70
+} as const;
+
+export type LogLevel = keyof typeof logLevels;
+export type LogLevelValue = typeof logLevels[LogLevel];
+
 export interface SnoopLoggConfig {
 	colors?: boolean;
 	elements?: LogElements;
@@ -36,6 +49,7 @@ export interface SnoopLoggConfig {
 
 interface BaseLogMessage {
 	args: unknown[];
+	level: LogLevelValue;
 	method: string;
 	ns: string;
 	ts: Date;
