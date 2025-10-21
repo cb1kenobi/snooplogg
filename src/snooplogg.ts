@@ -4,7 +4,7 @@ import { isJSON } from './is-json.js';
 import { NanoBuffer } from './nanobuffer.js';
 import { nsToRgb } from './ns-to-rgb.js';
 import {
-	logLevels,
+	LogLevels,
 	type FormatLogElements,
 	type LogElements,
 	type LogFormatter,
@@ -238,7 +238,7 @@ export class Logger extends Functionator {
 		return (...args: unknown[]): Logger => {
 			this.root.dispatch({
 				args,
-				level: logLevels[method as LogLevel] || 0,
+				level: LogLevels[method as LogLevel] || 0,
 				method,
 				ns: this.ns,
 				ts: new Date(),
@@ -317,7 +317,7 @@ export class SnoopLogg extends Functionator {
 	history: NanoBuffer<RawLogMessage> = new NanoBuffer();
 	id: number = Math.round(Math.random() * 1e9);
 	ignore: RegExp | null = null;
-	logLevel: LogLevelValue = logLevels.trace;
+	logLevel: LogLevelValue = LogLevels.trace;
 	onSnoopMessage: ((msg: RawLogMessage) => void) | null = null;
 	logger: Logger;
 	streams: Map<WritableLike, StreamConfig> = new Map();
@@ -342,6 +342,7 @@ export class SnoopLogg extends Functionator {
 	 * @param conf.elements A map of log element format functions.
 	 * @param conf.format The log message formatter function.
 	 * @param conf.historySize The maximum number of log messages to store in the history.
+	 * @param conf.logLevel The minimum log level to log.
 	 * @returns The SnoopLogg instance.
 	 * @access private
 	 */
@@ -386,6 +387,10 @@ export class SnoopLogg extends Functionator {
 				}
 				throw err;
 			}
+		}
+
+		if (conf.logLevel !== undefined) {
+			this.setLogLevel(conf.logLevel);
 		}
 
 		return this;
@@ -437,6 +442,23 @@ export class SnoopLogg extends Functionator {
 		if (id === this.id) {
 			globalThis.snooplogg.emit('message', msg);
 		}
+	}
+
+	/**
+	 * Sets the log level.
+	 * @param logLevel The log level to set.
+	 * @returns The SnoopLogg instance.
+	 * @access private
+	 */
+	setLogLevel(logLevel: LogLevelValue): this {
+		if (typeof logLevel !== 'number') {
+			throw new TypeError('Expected logLevel to be a number');
+		}
+		if (!Object.values(LogLevels).includes(logLevel)) {
+			throw new TypeError(`Invalid log level: ${logLevel}`);
+		}
+		this.logLevel = logLevel;
+		return this;
 	}
 
 	/**

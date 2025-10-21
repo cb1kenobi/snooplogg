@@ -1,7 +1,7 @@
 import { Writable } from 'node:stream';
 import { WritableStream } from 'memory-streams';
 import { describe, expect, it } from 'vitest';
-import snooplogg, { SnoopLogg, stripRegExp } from '../src/index.js';
+import snooplogg, { LogLevels, SnoopLogg, stripRegExp } from '../src/index.js';
 
 describe('SnoopLogg', () => {
 	describe('constructor()', () => {
@@ -513,6 +513,36 @@ describe('SnoopLogg', () => {
 			expect(output.replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo$/);
 			expect(output).not.toBe(outputNoColors);
 			expect(outputNoColors).toMatch(/^\s*\d\.\d{3}s foo$/);
+		});
+	});
+
+	describe('logLevel', () => {
+		it('should error if default logLevel is invalid', () => {
+			const instance = new SnoopLogg();
+			expect(() => {
+				instance.config({ logLevel: 'foo' } as any);
+			}).toThrowError(new TypeError('Expected logLevel to be a number'));
+		});
+
+		it('should set the default logLevel', () => {
+			const instance = new SnoopLogg();
+			instance.config({ logLevel: LogLevels.info });
+			expect(instance.logLevel).toBe(LogLevels.info);
+		});
+
+		it('should error if logLevel is invalid', () => {
+			const instance = new SnoopLogg();
+			expect(() => {
+				instance.setLogLevel('foo' as any);
+			}).toThrowError(new TypeError('Expected logLevel to be a number'));
+		});
+
+		it('should set the logLevel', () => {
+			const instance = new SnoopLogg();
+			instance.config({ logLevel: LogLevels.info });
+			expect(instance.logLevel).toBe(LogLevels.info);
+			instance.setLogLevel(LogLevels.warn);
+			expect(instance.logLevel).toBe(LogLevels.warn);
 		});
 	});
 });

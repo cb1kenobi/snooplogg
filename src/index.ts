@@ -4,6 +4,7 @@ import { SnoopLogg } from './snooplogg.js';
 export * from './is-json.js';
 export * from './ns-to-rgb.js';
 export * from './snooplogg.js';
+export { LogLevels } from './types.js';
 
 if (!Object.getOwnPropertyDescriptor(globalThis, 'snooplogg')) {
 	Object.defineProperty(globalThis, 'snooplogg', { value: new EventEmitter() });
