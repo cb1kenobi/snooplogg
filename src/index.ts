@@ -7,8 +7,8 @@ export * from './snooplogg.js';
 export { LogLevels } from './types.js';
 export { SnoopEmitter };
 
-if (!Object.getOwnPropertyDescriptor(globalThis, 'snooplogg')) {
-	Object.defineProperty(globalThis, 'snooplogg', { value: new SnoopEmitter() });
+if (!Object.getOwnPropertyDescriptor(globalThis, '__snooplogg')) {
+	Object.defineProperty(globalThis, '__snooplogg', { value: new SnoopEmitter() });
 }
 
 const instance: SnoopLogg = new SnoopLogg()
