@@ -428,7 +428,7 @@ export class SnoopLogg extends Functionator {
 		this.writeToStreams(msg);
 
 		if (msg.id === this.id) {
-			globalThis.__snooplogg.emit('message', msg);
+			globalThis.snooplogg.emit('message', msg);
 		}
 	}
 
@@ -612,7 +612,7 @@ export class SnoopLogg extends Functionator {
 			}
 		};
 
-		globalThis.__snooplogg.on('message', this.onSnoopMessage);
+		globalThis.snooplogg.on('message', this.onSnoopMessage);
 
 		return this;
 	}
@@ -624,7 +624,7 @@ export class SnoopLogg extends Functionator {
 	 */
 	unsnoop(): this {
 		if (this.onSnoopMessage) {
-			globalThis.__snooplogg.off('message', this.onSnoopMessage);
+			globalThis.snooplogg.off('message', this.onSnoopMessage);
 			this.onSnoopMessage = null;
 		}
 		return this;
