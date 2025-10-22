@@ -1,16 +1,14 @@
-import { format, inspect } from 'node:util';
 import ansiStyles from 'ansi-styles';
-import { isJSON } from './is-json.js';
 import { NanoBuffer } from './nanobuffer.js';
 import { nsToRgb } from './ns-to-rgb.js';
+import { defaultFormatter } from './default-formatter.js';
 import {
 	LogLevels,
+	LogLevelValue,
 	type FormatLogElements,
 	type LogElements,
 	type LogFormatter,
 	type LogLevel,
-	type LogLevelValue,
-	type LogMessage,
 	type RawLogMessage,
 	type SnoopLoggConfig,
 	type StreamConfig,
@@ -330,6 +328,9 @@ export class SnoopLogg extends Functionator {
 	constructor(conf?: SnoopLoggConfig) {
 		super((namespace: string) => this.logger.initChild(namespace));
 		this.logger = new Logger(this);
+		if (process.env.SNOOPLOGG_LEVEL) {
+			this.setLogLevel(process.env.SNOOPLOGG_LEVEL as LogLevel);
+		}
 		if (conf) {
 			this.config(conf);
 		}
@@ -409,15 +410,7 @@ export class SnoopLogg extends Functionator {
 	 * message was created.
 	 * @access private
 	 */
-	dispatch({
-		args,
-		id = this.id,
-		level,
-		method,
-		ns,
-		ts,
-		uptime
-	}: {
+	dispatch(params: {
 		args: unknown[];
 		id?: number;
 		level: LogLevelValue;
@@ -427,19 +420,14 @@ export class SnoopLogg extends Functionator {
 		uptime: number;
 	}): void {
 		const msg: RawLogMessage = {
-			args,
-			id,
-			level,
-			method,
-			ns,
-			ts,
-			uptime
+			id: this.id,
+			...params
 		};
 
 		this.history.push(msg);
 		this.writeToStreams(msg);
 
-		if (id === this.id) {
+		if (msg.id === this.id) {
 			globalThis.snooplogg.emit('message', msg);
 		}
 	}
@@ -450,14 +438,17 @@ export class SnoopLogg extends Functionator {
 	 * @returns The SnoopLogg instance.
 	 * @access private
 	 */
-	setLogLevel(logLevel: LogLevelValue): this {
-		if (typeof logLevel !== 'number') {
-			throw new TypeError('Expected logLevel to be a number');
+	setLogLevel(logLevel: LogLevel | LogLevelValue): this {
+		if (typeof logLevel === 'number') {
+			this.logLevel = logLevel;
+		} else if (typeof logLevel === 'string') {
+			this.logLevel = LogLevels[logLevel.toLowerCase()];
+			if (!this.logLevel) {
+				throw new Error(`Invalid log level: ${logLevel}`);
+			}
+		} else {
+			throw new TypeError('Expected log level to be a string or number');
 		}
-		if (!Object.values(LogLevels).includes(logLevel)) {
-			throw new TypeError(`Invalid log level: ${logLevel}`);
-		}
-		this.logLevel = logLevel;
 		return this;
 	}
 
@@ -646,7 +637,7 @@ export class SnoopLogg extends Functionator {
 	 */
 	writeToStreams(msg: RawLogMessage): void {
 		const { args, level, method, ns, ts, uptime } = msg;
-		if (this.isEnabled(ns)) {
+		if (this.isEnabled(ns) && level >= this.logLevel) {
 			for (const [stream, config] of this.streams.entries()) {
 				if (stream.writableObjectMode) {
 					stream.write(msg);
@@ -722,53 +713,4 @@ export class SnoopLogg extends Functionator {
 	get panic(): LogMethod {
 		return this.logger.panic;
 	}
-}
-
-/**
- * Formats each log message in the format "<uptime> <namespace> <method> <msg>".
- *
- * This is the default formatter used by SnoopLogg, but can be overridden by
- * passing a custom formatter function to the SnoopLogg constructor or the
- * config method.
- *
- * @param params - The formatter parameters.
- * @param params.args - The raw arguments passed to the log method.
- * @param params.colors - Whether to use colors in the log message.
- * @param params.elements - The log formatting elements.
- * @param params.method - The log method name.
- * @param params.ns - The namespace of the logger.
- * @param params.uptime - The uptime of the process.
- * @param styles - The ansi-styles module plus the nsToRgb function.
- * @returns The formatted log message.
- */
-export function defaultFormatter(
-	{ args, colors, elements, method, ns, uptime }: LogMessage,
-	styles: StyleHelpers
-): string {
-	const prefix = `${elements.uptime(uptime, styles)} ${
-		ns ? `${elements.namespace(ns, styles)} ` : ''
-	}${method && method !== 'log' ? `${elements.method(method, styles)} ` : ''}`;
-
-	const formattedArgs = args.map(it =>
-		isJSON(it)
-			? inspect(it, {
-					breakLength: 0,
-					colors,
-					depth: 4,
-					showHidden: false
-				})
-			: it
-	);
-
-	for (let i = 0, len = formattedArgs.length; i < len; i++) {
-		const arg = formattedArgs[i];
-		if (arg instanceof Error) {
-			formattedArgs[i] = elements.error(arg, styles);
-		}
-	}
-
-	return format(...formattedArgs)
-		.split('\n')
-		.map(s => prefix + elements.message(s, method, styles))
-		.join('\n');
 }
