@@ -15,7 +15,7 @@ top-level logger will relay them all.
 
 Real talk. SnoopLogg is dope, but it's not the best solution for things such as
 logging HTTP server requests and web browser console is not supported (yet).
-For CLI apps and libaries, SnoopLogg is the shiz.
+For CLI apps and libraries, SnoopLogg is the shiz.
 
 # Features
 
