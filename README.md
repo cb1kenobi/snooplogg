@@ -184,6 +184,11 @@ lib('lib').info(`This is the lib logger and I\'m being snooped`);
 
 You can stop snooping by calling `snooplogg.unsnoop()`.
 
+Note: SnoopLogg defines a global `snooplogg` variable to pass messages between
+logger instances and the message format is a plain object. This means, in
+theory, SnoopLogg v6 or newer instances can snoop on any other SnoopLogg v6 or
+new instances. No need to worry about keeping the dependency versions in sync.
+
 # Programmatic Instantiation
 
 You can create your own SnoopLogg instances instead of using the default one:
