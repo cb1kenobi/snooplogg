@@ -1,3 +1,7 @@
+# v6.1.1 (October 22, 2025)
+
+ * Fix typo... I can't spell
+
 # v6.1.0 (October 22, 2025)
 
  * Switch from Node.js EventEmitter to a lightweight browser-compatible version

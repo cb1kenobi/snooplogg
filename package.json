@@ -1,6 +1,6 @@
 {
   "name": "snooplogg",
-  "version": "6.1.0",
+  "version": "6.1.1",
   "description": "Your mind on your logs and your logs on your mind",
   "main": "./dist/index.cjs",
   "author": {
