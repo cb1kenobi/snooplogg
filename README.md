@@ -8,15 +8,21 @@ SnoopLogg is a lightweight, zero dependency debug logging library for Node.js,
 Bun, and Deno. It is specifically designed for CLI programs, daemons, and
 libraries.
 
-SnoopLogg is flexible and capable, but it's not the best solution for things
-such as logging HTTP server requests, filtering by log level, and web browser
-console is not supported. For CLI apps and libaries, SnoopLogg is the shiz.
+What seperates SnoopLogg from other loggers is the ability to 'snoop' on other
+log instances. Instead of passing the logger around, create a single top-level
+logger, tell it to snoop, then create as many new loggers as you want and the
+top-level logger will relay them all.
+
+Real talk. SnoopLogg is dope, but it's not the best solution for things such as
+logging HTTP server requests and web browser console is not supported (yet).
+For CLI apps and libaries, SnoopLogg is the shiz.
 
 # Features
 
  - Snoop on other SnoopLogg instances to aggregate log messages
  - Pipe log messages to one or more streams (such as a file or socket)
- - Namespaced and nested namespaced loggers with filtering support
+ - Namespaced and nested namespaced loggers
+ - Filter messages by namespace or log level
  - Automatic namespace colorization
  - Custom log message formatting and styling
  - Pretty stack trace rendering
@@ -122,6 +128,39 @@ log method, then you'll need to pipe SnoopLogg into an object mode
 ) that suppresses unwanted log messages, then pipe that into `stderr`, file,
 etc. See `pipe()` below.
 
+# Log Levels
+
+The default log level is `'trace'`. You can override it by setting the
+`SNOOPLOGG_LEVEL` environment variable to one of the following values:
+
+```typescript
+'trace' | 'debug' | 'log' | 'info' | 'warn' | 'error' | 'panic'
+```
+
+When you run your program, you would do:
+
+```bash
+$ SNOOPLOGG=* SNOOPLOGG_LEVEL=info node myapp.js
+```
+
+You override the default log level when creating a new SnoopLogg instance:
+
+```javascript
+import { SnoopLogg, LogLevels } from 'snooplogg';
+
+const logger = new SnoopLogg({ logLevel: 'info' });
+
+// then change it at runtime
+logger.setLogLevel('warn');
+
+// or change it using the LogLevel object
+logger.setLogLevel(LogLevels.debug);
+```
+
+Note that the log level only affects the output, specifically of the log
+instance the level was set. It doesn't affect other instances that are
+snooping.
+
 # Snooping
 
 SnoopLogg allows you to "snoop" or aggregrate log messages from other
@@ -144,6 +183,11 @@ lib('lib').info(`This is the lib logger and I\'m being snooped`);
 ![Snoop](media/05-snoop.webp)
 
 You can stop snooping by calling `snooplogg.unsnoop()`.
+
+Note: SnoopLogg defines a global `snooplogg` variable to pass messages between
+logger instances and the message format is a plain object. This means, in
+theory, SnoopLogg v6 or newer instances can snoop on any other SnoopLogg v6 or
+new instances. No need to worry about keeping the dependency versions in sync.
 
 # Programmatic Instantiation
 
@@ -169,16 +213,37 @@ myLogger.isEnabled('foo');
 
 # Piping
 
-You can pipe SnoopLogg into one or more writable streams such as a file.
+You can pipe SnoopLogg into one or more writable-like streams such as a file:
 
 ```javascript
 const out = fs.createWriteStream('debug.log');
-snooplogg.pipe(out);
+snooplogg.pipe(out, { /* snooplogg stream options */ });
 snooplogg.info('This will be written to stderr and a file');
 ```
 
-`pipe()` also accepts a second argument containing the stream specific
-overrides:
+`pipe()` takes two parameters: the `stream` and `options`:
+
+```typescript
+pipe(stream: WritableLike, options?: StreamOptions)
+```
+
+`WritableLike` is basically a minimum `WritableStream` that looks like this:
+
+```typescript
+interface WritableLike {
+  isTTY?: boolean;
+  on: (...args: any[]) => any;
+  removeListener: (...args: any[]) => any;
+  writableObjectMode?: boolean;
+  write: (...args: any[]) => any;
+}
+```
+
+If the writable stream has `objectMode` property set to `true`, SnoopLogg will
+passthrough the raw message object.
+
+The stream options allows you to override logging settings as well as force the
+stream to flush.
 
 ```typescript
 interface StreamOptions {
@@ -202,8 +267,36 @@ To stop piping to a stream:
 snooplogg.unpipe(out);
 ```
 
+# Transform
+
 You can pipe the messages to a transform stream to have complete control over
-each log message:
+each log message.
+
+You can use Node.js' built-in `Transform` or you can roll your own.
+
+## The Custom Way
+
+```javascript
+import { SnoopEmitter, type WritableLike } from 'snooplogg';
+
+class MyTransform extends EventEmitter implements WritableLike {
+  out: WritableLike; // or WritableStream
+
+  constructor(out: WritableLike) {
+    super();
+    this.out = out;
+  }
+
+  write(msg) {
+    this.out.write(`The message is ${msg}`);
+  }
+}
+
+const myLogger = new SnoopLogg().enable('*').pipe(new MyTransform());
+myLogger.info('Transform me!')
+```
+
+## The Node.js Way
 
 ```javascript
 import { Transform } from 'node:stream';

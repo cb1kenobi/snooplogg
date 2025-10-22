@@ -1,19 +1,20 @@
-import { format, inspect } from 'node:util';
 import ansiStyles from 'ansi-styles';
-import { isJSON } from './is-json.js';
 import { NanoBuffer } from './nanobuffer.js';
 import { nsToRgb } from './ns-to-rgb.js';
-import type {
-	FormatLogElements,
-	LogElements,
-	LogFormatter,
-	LogMessage,
-	RawLogMessage,
-	SnoopLoggConfig,
-	StreamConfig,
-	StreamOptions,
-	StyleHelpers,
-	WritableLike
+import { defaultFormatter } from './default-formatter.js';
+import {
+	LogLevels,
+	LogLevelValue,
+	type FormatLogElements,
+	type LogElements,
+	type LogFormatter,
+	type LogLevel,
+	type RawLogMessage,
+	type SnoopLoggConfig,
+	type StreamConfig,
+	type StreamOptions,
+	type StyleHelpers,
+	type WritableLike,
 } from './types.js';
 
 /**
@@ -166,13 +167,13 @@ class Functionator extends Function {
  * child namespaces.
  */
 export class Logger extends Functionator {
-	_log: LogMethod | undefined;
-	_trace: LogMethod | undefined;
-	_debug: LogMethod | undefined;
-	_info: LogMethod | undefined;
-	_warn: LogMethod | undefined;
-	_error: LogMethod | undefined;
-	_panic: LogMethod | undefined;
+	#trace: LogMethod | undefined;
+	#debug: LogMethod | undefined;
+	#log: LogMethod | undefined;
+	#info: LogMethod | undefined;
+	#warn: LogMethod | undefined;
+	#error: LogMethod | undefined;
+	#panic: LogMethod | undefined;
 	ns: string;
 	nsPath: string[];
 	root: SnoopLogg;
@@ -231,10 +232,11 @@ export class Logger extends Functionator {
 	 * @returns A new log method.
 	 * @access private
 	 */
-	initMethod(method: string) {
+	#initMethod(method: string) {
 		return (...args: unknown[]): Logger => {
 			this.root.dispatch({
 				args,
+				level: LogLevels[method as LogLevel] || 0,
 				method,
 				ns: this.ns,
 				ts: new Date(),
@@ -251,52 +253,52 @@ export class Logger extends Functionator {
 	 * @access public
 	 */
 	get log(): LogMethod {
-		if (!this._log) {
-			this._log = this.initMethod('log');
+		if (!this.#log) {
+			this.#log = this.#initMethod('log');
 		}
-		return this._log;
+		return this.#log;
 	}
 
 	get trace(): LogMethod {
-		if (!this._trace) {
-			this._trace = this.initMethod('trace');
+		if (!this.#trace) {
+			this.#trace = this.#initMethod('trace');
 		}
-		return this._trace;
+		return this.#trace;
 	}
 
 	get debug(): LogMethod {
-		if (!this._debug) {
-			this._debug = this.initMethod('debug');
+		if (!this.#debug) {
+			this.#debug = this.#initMethod('debug');
 		}
-		return this._debug;
+		return this.#debug;
 	}
 
 	get info(): LogMethod {
-		if (!this._info) {
-			this._info = this.initMethod('info');
+		if (!this.#info) {
+			this.#info = this.#initMethod('info');
 		}
-		return this._info;
+		return this.#info;
 	}
 
 	get warn(): LogMethod {
-		if (!this._warn) {
-			this._warn = this.initMethod('warn');
+		if (!this.#warn) {
+			this.#warn = this.#initMethod('warn');
 		}
-		return this._warn;
+		return this.#warn;
 	}
 
 	get error(): LogMethod {
-		if (!this._error) {
-			this._error = this.initMethod('error');
+		if (!this.#error) {
+			this.#error = this.#initMethod('error');
 		}
-		return this._error;
+		return this.#error;
 	}
 
 	get panic(): LogMethod {
-		if (!this._panic) {
-			this._panic = this.initMethod('panic');
+		if (!this.#panic) {
+			this.#panic = this.#initMethod('panic');
 		}
-		return this._panic;
+		return this.#panic;
 	}
 }
 
@@ -313,6 +315,7 @@ export class SnoopLogg extends Functionator {
 	history: NanoBuffer<RawLogMessage> = new NanoBuffer();
 	id: number = Math.round(Math.random() * 1e9);
 	ignore: RegExp | null = null;
+	logLevel: LogLevelValue = LogLevels.trace;
 	onSnoopMessage: ((msg: RawLogMessage) => void) | null = null;
 	logger: Logger;
 	streams: Map<WritableLike, StreamConfig> = new Map();
@@ -325,6 +328,9 @@ export class SnoopLogg extends Functionator {
 	constructor(conf?: SnoopLoggConfig) {
 		super((namespace: string) => this.logger.initChild(namespace));
 		this.logger = new Logger(this);
+		if (process.env.SNOOPLOGG_LEVEL) {
+			this.setLogLevel(process.env.SNOOPLOGG_LEVEL as LogLevel);
+		}
 		if (conf) {
 			this.config(conf);
 		}
@@ -337,6 +343,7 @@ export class SnoopLogg extends Functionator {
 	 * @param conf.elements A map of log element format functions.
 	 * @param conf.format The log message formatter function.
 	 * @param conf.historySize The maximum number of log messages to store in the history.
+	 * @param conf.logLevel The minimum log level to log.
 	 * @returns The SnoopLogg instance.
 	 * @access private
 	 */
@@ -383,6 +390,10 @@ export class SnoopLogg extends Functionator {
 			}
 		}
 
+		if (conf.logLevel !== undefined) {
+			this.setLogLevel(conf.logLevel);
+		}
+
 		return this;
 	}
 
@@ -399,36 +410,46 @@ export class SnoopLogg extends Functionator {
 	 * message was created.
 	 * @access private
 	 */
-	dispatch({
-		args,
-		id = this.id,
-		method,
-		ns,
-		ts,
-		uptime
-	}: {
+	dispatch(params: {
 		args: unknown[];
 		id?: number;
+		level: LogLevelValue;
 		method: string;
 		ns: string;
 		ts: Date;
 		uptime: number;
 	}): void {
 		const msg: RawLogMessage = {
-			args,
-			id,
-			method,
-			ns,
-			ts,
-			uptime
+			id: this.id,
+			...params
 		};
 
 		this.history.push(msg);
 		this.writeToStreams(msg);
 
-		if (id === this.id) {
+		if (msg.id === this.id) {
 			globalThis.snooplogg.emit('message', msg);
 		}
+	}
+
+	/**
+	 * Sets the log level.
+	 * @param logLevel The log level to set.
+	 * @returns The SnoopLogg instance.
+	 * @access private
+	 */
+	setLogLevel(logLevel: LogLevel | LogLevelValue): this {
+		if (typeof logLevel === 'number') {
+			this.logLevel = logLevel;
+		} else if (typeof logLevel === 'string') {
+			this.logLevel = LogLevels[logLevel.toLowerCase()];
+			if (!this.logLevel) {
+				throw new Error(`Invalid log level: ${logLevel}`);
+			}
+		} else {
+			throw new TypeError('Expected log level to be a string or number');
+		}
+		return this;
 	}
 
 	/**
@@ -615,8 +636,8 @@ export class SnoopLogg extends Functionator {
 	 * @access private
 	 */
 	writeToStreams(msg: RawLogMessage): void {
-		const { args, method, ns, ts, uptime } = msg;
-		if (this.isEnabled(ns)) {
+		const { args, level, method, ns, ts, uptime } = msg;
+		if (this.isEnabled(ns) && level >= this.logLevel) {
 			for (const [stream, config] of this.streams.entries()) {
 				if (stream.writableObjectMode) {
 					stream.write(msg);
@@ -630,13 +651,14 @@ export class SnoopLogg extends Functionator {
 					{
 						args,
 						colors,
-						method,
-						ns,
 						elements: {
 							...defaultElements,
 							...this.elements,
 							...config?.elements
 						},
+						level,
+						method,
+						ns,
 						ts,
 						uptime
 					},
@@ -664,16 +686,16 @@ export class SnoopLogg extends Functionator {
 	 * @returns The logger instance.
 	 * @access public
 	 */
-	get log(): LogMethod {
-		return this.logger.log;
-	}
-
 	get trace(): LogMethod {
 		return this.logger.trace;
 	}
 
 	get debug(): LogMethod {
 		return this.logger.debug;
+	}
+
+	get log(): LogMethod {
+		return this.logger.log;
 	}
 
 	get info(): LogMethod {
@@ -691,53 +713,4 @@ export class SnoopLogg extends Functionator {
 	get panic(): LogMethod {
 		return this.logger.panic;
 	}
-}
-
-/**
- * Formats each log message in the format "<uptime> <namespace> <method> <msg>".
- *
- * This is the default formatter used by SnoopLogg, but can be overridden by
- * passing a custom formatter function to the SnoopLogg constructor or the
- * config method.
- *
- * @param params - The formatter parameters.
- * @param params.args - The raw arguments passed to the log method.
- * @param params.colors - Whether to use colors in the log message.
- * @param params.elements - The log formatting elements.
- * @param params.method - The log method name.
- * @param params.ns - The namespace of the logger.
- * @param params.uptime - The uptime of the process.
- * @param styles - The ansi-styles module plus the nsToRgb function.
- * @returns The formatted log message.
- */
-export function defaultFormatter(
-	{ args, colors, elements, method, ns, uptime }: LogMessage,
-	styles: StyleHelpers
-): string {
-	const prefix = `${elements.uptime(uptime, styles)} ${
-		ns ? `${elements.namespace(ns, styles)} ` : ''
-	}${method && method !== 'log' ? `${elements.method(method, styles)} ` : ''}`;
-
-	const formattedArgs = args.map(it =>
-		isJSON(it)
-			? inspect(it, {
-					breakLength: 0,
-					colors,
-					depth: 4,
-					showHidden: false
-				})
-			: it
-	);
-
-	for (let i = 0, len = formattedArgs.length; i < len; i++) {
-		const arg = formattedArgs[i];
-		if (arg instanceof Error) {
-			formattedArgs[i] = elements.error(arg, styles);
-		}
-	}
-
-	return format(...formattedArgs)
-		.split('\n')
-		.map(s => prefix + elements.message(s, method, styles))
-		.join('\n');
 }

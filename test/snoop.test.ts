@@ -1,7 +1,9 @@
 import { Writable } from 'node:stream';
 import { WritableStream } from 'memory-streams';
 import { describe, expect, it } from 'vitest';
-import snooplogg, { SnoopLogg, stripRegExp } from '../src/index.js';
+import snooplogg, { LogLevels, SnoopLogg, stripRegExp } from '../src/index.js';
+import { SnoopEmitter } from '../src/emitter.js';
+import type { WritableLike } from '../src/types.js';
 
 describe('SnoopLogg', () => {
 	describe('constructor()', () => {
@@ -11,7 +13,6 @@ describe('SnoopLogg', () => {
 
 		it('should error if SnoopLogg options are invalid', () => {
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				new SnoopLogg('foo' as any);
 			}).toThrowError(new TypeError('Expected logger options to be an object'));
 		});
@@ -22,7 +23,6 @@ describe('SnoopLogg', () => {
 			const instance = new SnoopLogg();
 
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				instance.config('foo' as any);
 			}).toThrowError(new TypeError('Expected logger options to be an object'));
 		});
@@ -97,7 +97,6 @@ describe('SnoopLogg', () => {
 	describe('enable / isEnabled', () => {
 		it('should error if enable filter is invalid', () => {
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				new SnoopLogg().enable(123 as any);
 			}).toThrowError(
 				new TypeError('Expected pattern to be a string or regex')
@@ -110,13 +109,11 @@ describe('SnoopLogg', () => {
 			instance.enable('foo');
 			expect(instance.isEnabled('foo')).toBe(true);
 			expect(instance.isEnabled('bar')).toBe(false);
-			// biome-ignore lint/suspicious/noExplicitAny: Test case
 			expect(instance.isEnabled(undefined as any)).toBe(true);
 
 			instance.enable('*');
 			expect(instance.isEnabled('foo')).toBe(true);
 			expect(instance.isEnabled('bar')).toBe(true);
-			// biome-ignore lint/suspicious/noExplicitAny: Test case
 			expect(instance.isEnabled(undefined as any)).toBe(true);
 
 			instance.enable();
@@ -144,7 +141,6 @@ describe('SnoopLogg', () => {
 	describe('pipe / unpipe', () => {
 		it('should error if pipe stream is invalid', () => {
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				new SnoopLogg().pipe('foo' as any);
 			}).toThrowError(new TypeError('Invalid stream'));
 		});
@@ -175,19 +171,16 @@ describe('SnoopLogg', () => {
 
 		it('should error if unpipe stream is invalid', () => {
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				new SnoopLogg().unpipe('foo' as any);
 			}).toThrowError(new TypeError('Invalid stream'));
 		});
 
 		it('should pipe to stream with object mode', async () => {
 			class ObjectWritable extends Writable {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				chunks: any[] = [];
 				_write(
-					// biome-ignore lint/suspicious/noExplicitAny: Test case
 					chunk: any,
-					encoding: BufferEncoding,
+					_encoding: BufferEncoding,
 					callback: (err: Error | null | undefined) => void
 				) {
 					this.chunks.push(chunk);
@@ -240,13 +233,34 @@ describe('SnoopLogg', () => {
 				'The message is: foo'
 			);
 		});
+
+		it('should pipe to a custom writable-like stream', () => {
+			class MyTransform extends SnoopEmitter implements WritableLike {
+				constructor(private out: WritableLike) {
+					super();
+				}
+
+				write(msg) {
+					this.out.write(msg);
+				}
+			}
+
+			const out = new WritableStream();
+			const transformer = new MyTransform(out);
+
+			const instance = new SnoopLogg().enable('*').pipe(transformer);
+			instance.log('foo');
+
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
+				/^\s*\d\.\d{3}s foo$/
+			);
+		});
 	});
 
 	describe('format', () => {
 		it('should error if format function is invalid', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				instance.config({ format: 'foo' } as any);
 			}).toThrowError(new TypeError('Expected format to be a function'));
 		});
@@ -289,11 +303,9 @@ describe('SnoopLogg', () => {
 		it('should error if elements is invalid', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				instance.config({ elements: 'foo' } as any);
 			}).toThrowError(new TypeError('Expected elements to be an object'));
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				instance.config({ elements: { error: 'foo' as any } });
 			}).toThrowError(
 				new TypeError('Expected "error" elements to be a function')
@@ -374,7 +386,6 @@ describe('SnoopLogg', () => {
 		it('should error if logger name is invalid', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				instance(123 as any);
 			}).toThrowError(new TypeError('Expected namespace to be a string'));
 
@@ -403,14 +414,12 @@ describe('SnoopLogg', () => {
 		it('should error if history size is invalid', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				instance.config({ historySize: 'foo' } as any);
 			}).toThrowError(
 				new TypeError('Invalid history size: Expected max size to be a number')
 			);
 
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				instance.config({ historySize: -1 } as any);
 			}).toThrowError(
 				new RangeError(
@@ -434,7 +443,6 @@ describe('SnoopLogg', () => {
 	describe('snoop / unsnoop', () => {
 		it('should error if namespace is invalid', () => {
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				new SnoopLogg().snoop(123 as any);
 			}).toThrowError(
 				new TypeError('Expected namespace prefix to be a string')
@@ -492,7 +500,6 @@ describe('SnoopLogg', () => {
 		it('should error if config options are invalid', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
-				// biome-ignore lint/suspicious/noExplicitAny: Test case
 				instance.config({ colors: 'foo' as any });
 			}).toThrowError(new TypeError('Expected colors to be a boolean'));
 		});
@@ -513,6 +520,128 @@ describe('SnoopLogg', () => {
 			expect(output.replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo$/);
 			expect(output).not.toBe(outputNoColors);
 			expect(outputNoColors).toMatch(/^\s*\d\.\d{3}s foo$/);
+		});
+	});
+
+	describe('logLevel', () => {
+		it('should error if default log level is invalid', () => {
+			expect(() => {
+				new SnoopLogg({ logLevel: 'foo' as any });
+			}).toThrowError(new Error('Invalid log level: foo'));
+			expect(() => {
+				new SnoopLogg({ logLevel: {} as any });
+			}).toThrowError(new TypeError('Expected log level to be a string or number'));
+		});
+
+		it('should set the default log level', () => {
+			const out = new WritableStream();
+			const instance = new SnoopLogg({ logLevel: 'info' }).enable('*').pipe(out);
+			expect(instance.logLevel).toBe(LogLevels.info);
+
+			instance.trace('trace message');
+			instance.debug('debug message');
+			instance.log('log message');
+			instance.info('info message');
+			instance.warn('warn message');
+			instance.error('error message');
+			instance.panic('panic message');
+
+			const output = out.toString().trim().replace(stripRegExp, '');
+			expect(output).toMatch(/^\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+		});
+
+		it('should error if new log level is invalid', () => {
+			const instance = new SnoopLogg();
+			expect(() => {
+				instance.setLogLevel('foo' as any);
+			}).toThrowError(new Error('Invalid log level: foo'));
+			expect(() => {
+				instance.setLogLevel({} as any);
+			}).toThrowError(new TypeError('Expected log level to be a string or number'));
+		});
+
+		it('should set new log level', () => {
+			const out = new WritableStream();
+			const instance = new SnoopLogg().enable('*').pipe(out);
+
+			instance.config({ logLevel: 'warn' });
+			expect(instance.logLevel).toBe(LogLevels.warn);
+			instance.trace('trace message');
+			instance.debug('debug message');
+			instance.log('log message');
+			instance.info('info message');
+			instance.warn('warn message');
+			instance.error('error message');
+			instance.panic('panic message');
+
+			let output = out.toString().trim().replace(stripRegExp, '');
+			expect(output).toMatch(/^\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+
+			instance.setLogLevel(LogLevels.trace);
+			expect(instance.logLevel).toBe(LogLevels.trace);
+			instance.trace('trace message');
+			instance.debug('debug message');
+			instance.log('log message');
+			instance.info('info message');
+			instance.warn('warn message');
+			instance.error('error message');
+			instance.panic('panic message');
+
+			output = out.toString().trim().replace(stripRegExp, '');
+			expect(output).toMatch(/^\s*\d\.\d{3}s TRACE trace message\n\s*\d\.\d{3}s DEBUG debug message\n\s*\d\.\d{3}s log message\n\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+
+			instance.setLogLevel('debug');
+			expect(instance.logLevel).toBe(LogLevels.debug);
+			instance.trace('trace message');
+			instance.debug('debug message');
+			instance.log('log message');
+			instance.info('info message');
+			instance.warn('warn message');
+			instance.error('error message');
+			instance.panic('panic message');
+
+			output = out.toString().trim().replace(stripRegExp, '');
+			expect(output).toMatch(/^\s*\d\.\d{3}s DEBUG debug message\n\s*\d\.\d{3}s log message\n\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+		});
+
+		it('should filter log level of snooped instances', () => {
+			const out = new WritableStream();
+			const instance = new SnoopLogg({ logLevel: 'info' }).enable('*').pipe(out);
+			const instance2 = new SnoopLogg().enable('*');
+			instance.snoop();
+
+			instance2.trace('trace message');
+			instance2.debug('debug message');
+			instance2.log('log message');
+			instance2.info('info message');
+			instance2.warn('warn message');
+			instance2.error('error message');
+			instance2.panic('panic message');
+
+			let output = out.toString().trim().replace(stripRegExp, '');
+			expect(output).toMatch(/^\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+
+			instance.setLogLevel('warn');
+			instance2.trace('trace message');
+			instance2.debug('debug message');
+			instance2.log('log message');
+			instance2.info('info message');
+			instance2.warn('warn message');
+			instance2.error('error message');
+			instance2.panic('panic message');
+
+			output = out.toString().trim().replace(stripRegExp, '');
+			expect(output).toMatch(/^\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+		});
+
+		it('should set the log level from the environment variable', () => {
+			try {
+				process.env.SNOOPLOGG_LEVEL = 'warn';
+				const instance = new SnoopLogg();
+				expect(instance.logLevel).toBe(LogLevels.warn);
+			} finally {
+				delete process.env.SNOOPLOGG_LEVEL;
+			}
 		});
 	});
 });

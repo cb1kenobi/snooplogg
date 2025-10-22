@@ -1,14 +1,11 @@
 import type ansiStyles from 'ansi-styles';
 import type { nsToRgb } from './ns-to-rgb.js';
 
-export type WritableLike = {
+export interface WritableLike {
 	isTTY?: boolean;
-	// biome-ignore lint/suspicious/noExplicitAny: Test case
 	on: (...args: any[]) => any;
-	// biome-ignore lint/suspicious/noExplicitAny: Test case
 	removeListener: (...args: any[]) => any;
 	writableObjectMode?: boolean;
-	// biome-ignore lint/suspicious/noExplicitAny: Test case
 	write: (...args: any[]) => any;
 };
 
@@ -27,15 +24,30 @@ export type FormatLogElements = {
 
 export type LogElements = Partial<FormatLogElements>;
 
+export const LogLevels = {
+	trace: 10,
+	debug: 20,
+	log: 30,
+	info: 40,
+	warn: 50,
+	error: 60,
+	panic: 70
+} as const;
+
+export type LogLevel = 'trace' | 'debug' | 'log' | 'info' | 'warn' | 'error' | 'panic';
+export type LogLevelValue = (typeof LogLevels)[LogLevel];
+
 export interface SnoopLoggConfig {
 	colors?: boolean;
 	elements?: LogElements;
 	format?: LogFormatter | null;
 	historySize?: number;
+	logLevel?: LogLevel | LogLevelValue;
 }
 
 interface BaseLogMessage {
 	args: unknown[];
+	level: LogLevelValue;
 	method: string;
 	ns: string;
 	ts: Date;

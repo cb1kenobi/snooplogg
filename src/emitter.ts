@@ -2,8 +2,12 @@
  * Lightweight EventEmitter-like class used for the global SnoopLogg message
  * bus.
  */
-export class EventEmitter {
+export class SnoopEmitter {
 	private events: Record<string, ((...args: any[]) => void)[]> = {};
+
+	addListener(event: string, listener: (...args: any[]) => void): this {
+		return this.on(event, listener);
+	}
 
 	emit(event: string, ...args: any[]): boolean {
 		const listeners = this.events[event];
@@ -23,6 +27,16 @@ export class EventEmitter {
 		return true;
 	}
 
+	off(event: string, listenerToRemove: (...args: any[]) => void): this {
+		const listeners = this.events[event];
+		if (listeners) {
+			this.events[event] = listeners.filter(
+				(listener) => listener !== listenerToRemove
+			);
+		}
+		return this;
+	}
+
 	on(event: string, listener: (...args: any[]) => void): this {
 		if (!this.events[event]) {
 			this.events[event] = [listener];
@@ -32,13 +46,7 @@ export class EventEmitter {
 		return this;
 	}
 
-	off(event: string, listenerToRemove: (...args: any[]) => void): this {
-		const listeners = this.events[event];
-		if (listeners) {
-			this.events[event] = listeners.filter(
-				(listener) => listener !== listenerToRemove
-			);
-		}
-		return this;
+	removeListener(event: string, listener: (...args: any[]) => void): this {
+		return this.off(event, listener);
 	}
 }
