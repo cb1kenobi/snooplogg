@@ -8,9 +8,14 @@ SnoopLogg is a lightweight, zero dependency debug logging library for Node.js,
 Bun, and Deno. It is specifically designed for CLI programs, daemons, and
 libraries.
 
-SnoopLogg is dope, but it's not the best solution for things such as logging
-HTTP server requests and web browser console is not supported (yet). For CLI
-apps and libaries, SnoopLogg is the shiz.
+What seperates SnoopLogg from other loggers is the ability to 'snoop' on other
+log instances. Instead of passing the logger around, create a single top-level
+logger, tell it to snoop, then create as many new loggers as you want and the
+top-level logger will relay them all.
+
+Real talk. SnoopLogg is dope, but it's not the best solution for things such as
+logging HTTP server requests and web browser console is not supported (yet).
+For CLI apps and libaries, SnoopLogg is the shiz.
 
 # Features
 
