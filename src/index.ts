@@ -1,12 +1,11 @@
 import { SnoopEmitter } from './emitter.js';
 import { SnoopLogg } from './snooplogg.js';
 
-export { SnoopEmitter };
-
 export * from './is-json.js';
 export * from './ns-to-rgb.js';
 export * from './snooplogg.js';
 export { LogLevels } from './types.js';
+export { SnoopEmitter };
 
 if (!Object.getOwnPropertyDescriptor(globalThis, 'snooplogg')) {
 	Object.defineProperty(globalThis, 'snooplogg', { value: new SnoopEmitter() });
