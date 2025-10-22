@@ -1,4 +1,4 @@
-# v6.1.0
+# v6.1.0 (October 22, 2025)
 
  * Switch from Node.js EventEmitter to a lightweight browser-compatible version
  * Add support for log levels using `SNOOPLOGG_LEVEL` env var or `logLevel` option
