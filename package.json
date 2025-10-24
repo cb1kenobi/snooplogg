@@ -43,7 +43,7 @@
   "devDependencies": {
     "@rollup/plugin-replace": "6.0.2",
     "@types/node": "24.9.1",
-    "@vitest/coverage-v8": "4.0.1",
+    "@vitest/coverage-v8": "4.0.2",
     "ansi-styles": "6.2.3",
     "esbuild": "0.25.11",
     "lefthook": "2.0.0",
@@ -53,7 +53,7 @@
     "tsdown": "0.15.9",
     "tslib": "2.8.1",
     "typescript": "5.9.3",
-    "vitest": "4.0.1"
+    "vitest": "4.0.2"
   },
   "files": [
     "demo",
