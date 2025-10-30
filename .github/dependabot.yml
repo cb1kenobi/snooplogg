@@ -6,7 +6,8 @@ updates:
       - "automerge"
       - "dependencies"
     schedule:
-      interval: "daily"
+      interval: "weekly"
+      day: "day"
       time: "02:34"
     groups:
       production:
