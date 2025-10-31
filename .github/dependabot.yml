@@ -3,7 +3,6 @@ updates:
   - package-ecosystem: "npm"
     directory: "/"
     labels:
-      - "automerge"
       - "dependencies"
     schedule:
       interval: "weekly"
