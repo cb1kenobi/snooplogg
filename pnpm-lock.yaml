@@ -75,11 +75,11 @@ packages:
     resolution: {integrity: sha512-6zABk/ECA/QYSCQ1NGiVwwbQerUCZ+TQbp64Q3AgmfNvurHH0j8TtXa1qbShXA6qqkpAj4V5W8pP6mLe1mcMqA==}
     engines: {node: '>=18'}
 
-  '@emnapi/core@1.6.0':
-    resolution: {integrity: sha512-zq/ay+9fNIJJtJiZxdTnXS20PllcYMX3OE23ESc4HK/bdYu3cOWYVhsOhVnXALfU/uqJIxn5NBPd9z4v+SfoSg==}
+  '@emnapi/core@1.7.0':
+    resolution: {integrity: sha512-pJdKGq/1iquWYtv1RRSljZklxHCOCAJFJrImO5ZLKPJVJlVUcs8yFwNQlqS0Lo8xT1VAXXTCZocF9n26FWEKsw==}
 
-  '@emnapi/runtime@1.6.0':
-    resolution: {integrity: sha512-obtUmAHTMjll499P+D9A3axeJFlhdjOWdKUNs/U6QIGT7V5RjcUW1xToAzjvmgTSQhDbYn/NwfTRoJcQ2rNBxA==}
+  '@emnapi/runtime@1.7.0':
+    resolution: {integrity: sha512-oAYoQnCYaQZKVS53Fq23ceWMRxq5EhQsE0x0RdQ55jT7wagMu5k+fS39v1fiSLrtrLQlXwVINenqhLMtTrV/1Q==}
 
   '@emnapi/wasi-threads@1.1.0':
     resolution: {integrity: sha512-WI0DdZ8xFSbgMjR1sFsKABJ/C5OnRrjT06JXbZKexJGrDuPTzZdDYfFlsgcCXCyf+suG5QU2e/y1Wo2V/OapLQ==}
@@ -623,8 +623,8 @@ packages:
   ast-v8-to-istanbul@0.3.8:
     resolution: {integrity: sha512-szgSZqUxI5T8mLKvS7WTjF9is+MVbOeLADU73IseOcrqhxr/VAvy6wfoVE39KnKzA7JRhjF5eUagNlHwvZPlKQ==}
 
-  birpc@2.6.1:
-    resolution: {integrity: sha512-LPnFhlDpdSH6FJhJyn4M0kFO7vtQ5iPw24FnG0y21q09xC7e8+1LeR31S1MAIrDAHp4m7aas4bEkTDTvMAtebQ==}
+  birpc@2.7.0:
+    resolution: {integrity: sha512-tub/wFGH49vNCm0xraykcY3TcRgX/3JsALYq/Lwrtti+bTyFHkCUAWF5wgYoie8P41wYwig2mIKiqoocr1EkEQ==}
 
   cac@6.7.14:
     resolution: {integrity: sha512-b6Ilus+c3RrdDk+JhLKUAQfzzgLEPy6wcXqS7f/xe1EETvsDP6GORG7SFuOs6cID5YkqchW/LXZbX5bc8j7ZcQ==}
@@ -1197,13 +1197,13 @@ snapshots:
 
   '@bcoe/v8-coverage@1.0.2': {}
 
-  '@emnapi/core@1.6.0':
+  '@emnapi/core@1.7.0':
     dependencies:
       '@emnapi/wasi-threads': 1.1.0
       tslib: 2.8.1
     optional: true
 
-  '@emnapi/runtime@1.6.0':
+  '@emnapi/runtime@1.7.0':
     dependencies:
       tslib: 2.8.1
     optional: true
@@ -1322,8 +1322,8 @@ snapshots:
 
   '@napi-rs/wasm-runtime@1.0.7':
     dependencies:
-      '@emnapi/core': 1.6.0
-      '@emnapi/runtime': 1.6.0
+      '@emnapi/core': 1.7.0
+      '@emnapi/runtime': 1.7.0
       '@tybys/wasm-util': 0.10.1
     optional: true
 
@@ -1591,7 +1591,7 @@ snapshots:
       estree-walker: 3.0.3
       js-tokens: 9.0.1
 
-  birpc@2.6.1: {}
+  birpc@2.7.0: {}
 
   cac@6.7.14: {}
 
@@ -1871,7 +1871,7 @@ snapshots:
       '@babel/parser': 7.28.5
       '@babel/types': 7.28.5
       ast-kit: 2.1.3
-      birpc: 2.6.1
+      birpc: 2.7.0
       debug: 4.4.3
       dts-resolver: 2.1.2
       get-tsconfig: 4.13.0
