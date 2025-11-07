@@ -12,6 +12,11 @@ const config: UserConfig = defineConfig({
 	entry: './src/index.ts',
 	format: ['es', 'cjs'],
 	minify: !process.env.SKIP_MINIFY,
+	outExtensions(context) {
+		return {
+			js: context.format === 'cjs' ? '.cjs' : '.js'
+		};
+	},
 	platform: 'node',
 	plugins: [
 		replace({
