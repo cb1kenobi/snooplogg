@@ -30,6 +30,6 @@ export function nsToRgb(text: string): Color {
 	return {
 		r: Math.round(255 * f(0)),
 		g: Math.round(255 * f(8)),
-		b: Math.round(255 * f(4))
+		b: Math.round(255 * f(4)),
 	};
 }

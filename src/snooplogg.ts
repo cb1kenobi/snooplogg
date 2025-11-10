@@ -1,14 +1,14 @@
 import ansiStyles from 'ansi-styles';
+import { defaultFormatter } from './default-formatter.js';
 import { NanoBuffer } from './nanobuffer.js';
 import { nsToRgb } from './ns-to-rgb.js';
-import { defaultFormatter } from './default-formatter.js';
 import {
-	LogLevels,
-	LogLevelValue,
 	type FormatLogElements,
 	type LogElements,
 	type LogFormatter,
 	type LogLevel,
+	LogLevels,
+	LogLevelValue,
 	type RawLogMessage,
 	type SnoopLoggConfig,
 	type StreamConfig,
@@ -50,13 +50,16 @@ export const defaultElements: FormatLogElements = {
 				.slice(1)
 				.map((line, i, lines) => {
 					const m = line.match(stackFrameRE);
-					let result = `${styles.gray.open}${i + 1 < lines.length ? '├' : '└'}─ ${m ? '' : line.trim()}${styles.gray.close}`;
+					let result = `${styles.gray.open}${i + 1 < lines.length ? '├' : '└'}─ ${
+						m ? '' : line.trim()
+					}${styles.gray.close}`;
 					if (m) {
 						const [_, method, location] = m;
 						const stlyedMethod = method
 							? `${styles.whiteBright.open}${styles.italic.open}${method}${styles.italic.close}${styles.whiteBright.close}`
 							: '';
-						result += `${stlyedMethod}${styles.white.open}${location}${styles.white.close}`;
+						result +=
+							`${stlyedMethod}${styles.white.open}${location}${styles.white.close}`;
 					}
 					return result;
 				})
@@ -122,7 +125,9 @@ export const defaultElements: FormatLogElements = {
 	 * @returns The formatted timestamp.
 	 */
 	timestamp(ts: Date, styles: StyleHelpers) {
-		return `${styles.gray.open}${ts.toISOString().replace('T', ' ').replace('Z', '')}${styles.gray.close}`;
+		return `${styles.gray.open}${
+			ts.toISOString().replace('T', ' ').replace('Z', '')
+		}${styles.gray.close}`;
 	},
 
 	/**
@@ -133,7 +138,7 @@ export const defaultElements: FormatLogElements = {
 	 */
 	uptime(uptime: number, styles: StyleHelpers) {
 		return `${styles.gray.open}${uptime.toFixed(3).padStart(8)}s${styles.gray.close}`;
-	}
+	},
 };
 
 /**
@@ -141,7 +146,7 @@ export const defaultElements: FormatLogElements = {
  */
 const pattern = [
 	'[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:[a-zA-Z\\d]*(?:;[a-zA-Z\\d]*)*)?\\u0007)',
-	'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))'
+	'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PRZcf-ntqry=><~]))',
 ].join('|');
 export const stripRegExp: RegExp = new RegExp(pattern, 'g');
 
@@ -240,7 +245,7 @@ export class Logger extends Functionator {
 				method,
 				ns: this.ns,
 				ts: new Date(),
-				uptime: process.uptime()
+				uptime: process.uptime(),
 			});
 			return this;
 		};
@@ -384,7 +389,9 @@ export class SnoopLogg extends Functionator {
 			} catch (err: unknown) {
 				if (err instanceof Error) {
 					err.message = `Invalid history size: ${err.message}`;
-					err.stack = `${err.toString()}${err.stack?.substring(err.stack.indexOf('\n')) || ''}`;
+					err.stack = `${err.toString()}${
+						err.stack?.substring(err.stack.indexOf('\n')) || ''
+					}`;
 				}
 				throw err;
 			}
@@ -421,7 +428,7 @@ export class SnoopLogg extends Functionator {
 	}): void {
 		const msg: RawLogMessage = {
 			id: this.id,
-			...params
+			...params,
 		};
 
 		this.history.push(msg);
@@ -515,11 +522,11 @@ export class SnoopLogg extends Functionator {
 		}
 
 		if (
-			!namespace ||
-			allow === '*' ||
-			(allow instanceof RegExp &&
-				allow.test(namespace) &&
-				(!this.ignore || !this.ignore.test(namespace)))
+			!namespace
+			|| allow === '*'
+			|| (allow instanceof RegExp
+				&& allow.test(namespace)
+				&& (!this.ignore || !this.ignore.test(namespace)))
 		) {
 			// nothing to filter
 			return true;
@@ -550,7 +557,7 @@ export class SnoopLogg extends Functionator {
 			colors: opts.colors,
 			elements: opts.elements,
 			format: opts.format,
-			onEnd
+			onEnd,
 		});
 		stream.on('end', onEnd);
 
@@ -604,9 +611,9 @@ export class SnoopLogg extends Functionator {
 				this.dispatch(
 					nsPrefix
 						? {
-								...msg,
-								ns: `${nsPrefix}${msg.ns || ''}`
-							}
+							...msg,
+							ns: `${nsPrefix}${msg.ns || ''}`,
+						}
 						: msg
 				);
 			}
@@ -647,29 +654,31 @@ export class SnoopLogg extends Functionator {
 				const formatter = config?.format || this.format || defaultFormatter;
 				const colors = config.colors ?? (this.colors && stream.isTTY !== false);
 
-				let formatted = `${formatter(
-					{
-						args,
-						colors,
-						elements: {
-							...defaultElements,
-							...this.elements,
-							...config?.elements
-						},
-						level,
-						method,
-						ns,
-						ts,
-						uptime
-					},
-					Object.defineProperties(
+				let formatted = `${
+					formatter(
 						{
-							...ansiStyles,
-							nsToRgb
+							args,
+							colors,
+							elements: {
+								...defaultElements,
+								...this.elements,
+								...config?.elements,
+							},
+							level,
+							method,
+							ns,
+							ts,
+							uptime,
 						},
-						Object.getOwnPropertyDescriptors(ansiStyles)
+						Object.defineProperties(
+							{
+								...ansiStyles,
+								nsToRgb,
+							},
+							Object.getOwnPropertyDescriptors(ansiStyles)
+						)
 					)
-				)}\n`;
+				}\n`;
 
 				if (!colors) {
 					formatted = formatted.replace(stripRegExp, '');

@@ -1,13 +1,15 @@
-import { format } from 'node:util';
 import ansiStyles from 'ansi-styles';
-import snooplogg, { SnoopLogg, info, log } from '../dist/index.js';
+import { format } from 'node:util';
+import snooplogg, { info, log, SnoopLogg } from '../dist/index.js';
 
 const { cyan, magenta, redBright } = ansiStyles;
 
 console.log(`${magenta.open}Welcome to SnoopLogg demo!${magenta.close}\n`);
 
 if (process.env.SNOOPLOGG_LEVEL) {
-	console.log(`Filtering by log level ${cyan.open}'${process.env.SNOOPLOGG_LEVEL}'${cyan.close}\n`);
+	console.log(
+		`Filtering by log level ${cyan.open}'${process.env.SNOOPLOGG_LEVEL}'${cyan.close}\n`
+	);
 }
 
 log("Congratulations! You've activated SnoopLogg!\n");
@@ -55,7 +57,7 @@ You can customize the log message format:
 snooplogg.config({
 	format({ args, elements, method, ts }, styles) {
 		return `${elements.timestamp(ts, styles)} <${method}>${format(...args)}</${method}>`;
-	}
+	},
 });
 info('This is a custom message format with timestamp');
 snooplogg.config({ format: null });
@@ -97,8 +99,7 @@ if (!process.env.SNOOPLOGG && !process.env.DEBUG) {
 		`Try running: ${cyan.open}SNOOPLOGG=* ${runtime} demo.js${cyan.close}`
 	);
 } else if (!process.env.SNOOPLOGG_LEVEL) {
-  log(`
+	log(`
 Don't forget to check out the log level!
-  ${cyan.open}SNOOPLOGG=* SNOOPLOGG_LEVEL=warn ${runtime} demo.js${cyan.close}`
-	);
+  ${cyan.open}SNOOPLOGG=* SNOOPLOGG_LEVEL=warn ${runtime} demo.js${cyan.close}`);
 }

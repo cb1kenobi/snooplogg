@@ -7,7 +7,7 @@ export interface WritableLike {
 	removeListener: (...args: any[]) => any;
 	writableObjectMode?: boolean;
 	write: (...args: any[]) => any;
-};
+}
 
 export type LogFormatter = (msg: LogMessage, styles: StyleHelpers) => string;
 
@@ -31,7 +31,7 @@ export const LogLevels = {
 	info: 40,
 	warn: 50,
 	error: 60,
-	panic: 70
+	panic: 70,
 } as const;
 
 export type LogLevel = 'trace' | 'debug' | 'log' | 'info' | 'warn' | 'error' | 'panic';

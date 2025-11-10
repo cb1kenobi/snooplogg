@@ -30,11 +30,11 @@ export function defaultFormatter(
 	const formattedArgs = args.map(it =>
 		isJSON(it)
 			? inspect(it, {
-					breakLength: 0,
-					colors,
-					depth: 4,
-					showHidden: false
-				})
+				breakLength: 0,
+				colors,
+				depth: 4,
+				showHidden: false,
+			})
 			: it
 	);
 
