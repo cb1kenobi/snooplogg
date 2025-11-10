@@ -9,27 +9,27 @@ jobs:
     name: Publish
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Setup node
-      uses: actions/setup-node@v4
-      with:
-        node-version: 24
-        registry-url: 'https://registry.npmjs.org/'
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org/'
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@v2
-      with:
-        version: latest
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
 
-    - name: Install dependencies
-      run: pnpm install
+      - name: Install dependencies
+        run: pnpm install
 
-    - name: Lint
-      run: pnpm lint
+      - name: Lint
+        run: pnpm lint
 
-    - name: Publish to npm
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-      run: npm publish --tag ${{ github.event.release.prerelease && 'next' || 'latest' }}
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --tag ${{ github.event.release.prerelease && 'next' || 'latest' }}

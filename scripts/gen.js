@@ -1,8 +1,8 @@
+import ansiStyles from 'ansi-styles';
 import { spawnSync } from 'node:child_process';
 import { readdir } from 'node:fs/promises';
 import { dirname, join, parse } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import ansiStyles from 'ansi-styles';
 import { stripRegExp } from '../dist/index.js';
 
 const wo = ansiStyles.bgWhiteBright.open;
@@ -22,7 +22,7 @@ for (const filename of files.sort()) {
 		const file = join(root, 'examples', filename);
 		const { name } = parse(filename);
 		const { stdout } = spawnSync(process.execPath, [file], {
-			encoding: 'utf8'
+			encoding: 'utf8',
 		});
 		console.log(
 			`\n${wo} ${bo}${name}${bc}${' '.padEnd(width - name.length)} ${wc}`

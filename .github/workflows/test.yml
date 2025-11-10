@@ -42,32 +42,32 @@ jobs:
         os: [ubuntu-latest, windows-latest, macos-latest]
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: Use Node.js ${{ matrix.node }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node == 18 && 20 || matrix.node }}
+      - name: Use Node.js ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node == 18 && 20 || matrix.node }}
 
-    - name: Setup dependencies
-      uses: ./.github/actions/setup-deps
-      with:
-        gh-token: ${{ secrets.GH_TOKEN }}
+      - name: Setup dependencies
+        uses: ./.github/actions/setup-deps
+        with:
+          gh-token: ${{ secrets.GH_TOKEN }}
 
-    - name: Build
-      env:
-        GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      run: pnpm build
+      - name: Build
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: pnpm build
 
-    - name: Install Node 18
-      if: matrix.node == 18
-      uses: actions/setup-node@v4
-      with:
-        node-version: 18
+      - name: Install Node 18
+        if: matrix.node == 18
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
 
-    - name: Run tests
-      run: pnpm coverage
+      - name: Run tests
+        run: pnpm coverage
 
   bun-test:
     name: Test on Bun

@@ -19,15 +19,15 @@ For CLI apps and libraries, SnoopLogg is the shiz.
 
 # Features
 
- - Snoop on other SnoopLogg instances to aggregate log messages
- - Pipe log messages to one or more streams (such as a file or socket)
- - Namespaced and nested namespaced loggers
- - Filter messages by namespace or log level
- - Automatic namespace colorization
- - Custom log message formatting and styling
- - Pretty stack trace rendering
- - Support for object mode streams
- - Zero dependencies
+- Snoop on other SnoopLogg instances to aggregate log messages
+- Pipe log messages to one or more streams (such as a file or socket)
+- Namespaced and nested namespaced loggers
+- Filter messages by namespace or log level
+- Automatic namespace colorization
+- Custom log message formatting and styling
+- Pretty stack trace rendering
+- Support for object mode streams
+- Zero dependencies
 
 # Basic Logging
 
@@ -35,7 +35,7 @@ SnoopLogg provides 7 loggers. `log()` is the only one that doesn't print a
 label.
 
 ```javascript
-import { log, trace, debug, info, warn, error, panic } from 'snooplogg';
+import { debug, error, info, log, panic, trace, warn } from 'snooplogg';
 
 log('This is a log() message');
 trace('This is a trace() message');
@@ -60,8 +60,8 @@ values.
 info('My name is %s and my favorite drink is %s', 'Snoop', 'juice');
 
 debug({
-  name: 'Snoop',
-  occupation: 'Logger'
+	name: 'Snoop',
+	occupation: 'Logger',
 });
 
 error(new Error('This is an error'));
@@ -123,9 +123,7 @@ bazLogger.info('BAZ!');
 
 Note that SnoopLogg does not support "log levels". If you want to filter by
 log method, then you'll need to pipe SnoopLogg into an object mode
-[transform stream](
-  https://nodejs.org/api/stream.html#implementing-a-transform-stream
-) that suppresses unwanted log messages, then pipe that into `stderr`, file,
+[transform stream](https://nodejs.org/api/stream.html#implementing-a-transform-stream) that suppresses unwanted log messages, then pipe that into `stderr`, file,
 etc. See `pipe()` below.
 
 # Log Levels
@@ -134,7 +132,7 @@ The default log level is `'trace'`. You can override it by setting the
 `SNOOPLOGG_LEVEL` environment variable to one of the following values:
 
 ```typescript
-'trace' | 'debug' | 'log' | 'info' | 'warn' | 'error' | 'panic'
+'trace' | 'debug' | 'log' | 'info' | 'warn' | 'error' | 'panic';
 ```
 
 When you run your program, you would do:
@@ -146,7 +144,7 @@ $ SNOOPLOGG=* SNOOPLOGG_LEVEL=info node myapp.js
 You override the default log level when creating a new SnoopLogg instance:
 
 ```javascript
-import { SnoopLogg, LogLevels } from 'snooplogg';
+import { LogLevels, SnoopLogg } from 'snooplogg';
 
 const logger = new SnoopLogg({ logLevel: 'info' });
 
@@ -217,7 +215,7 @@ You can pipe SnoopLogg into one or more writable-like streams such as a file:
 
 ```javascript
 const out = fs.createWriteStream('debug.log');
-snooplogg.pipe(out, { /* snooplogg stream options */ });
+snooplogg.pipe(out, {/* snooplogg stream options */});
 snooplogg.info('This will be written to stderr and a file');
 ```
 
@@ -231,11 +229,11 @@ pipe(stream: WritableLike, options?: StreamOptions)
 
 ```typescript
 interface WritableLike {
-  isTTY?: boolean;
-  on: (...args: any[]) => any;
-  removeListener: (...args: any[]) => any;
-  writableObjectMode?: boolean;
-  write: (...args: any[]) => any;
+	isTTY?: boolean;
+	on: (...args: any[]) => any;
+	removeListener: (...args: any[]) => any;
+	writableObjectMode?: boolean;
+	write: (...args: any[]) => any;
 }
 ```
 
@@ -247,10 +245,10 @@ stream to flush.
 
 ```typescript
 interface StreamOptions {
-  colors?: boolean;
-  elements?: LogElements;
-  flush?: boolean;
-  format?: LogFormatter;
+	colors?: boolean;
+	elements?: LogElements;
+	flush?: boolean;
+	format?: LogFormatter;
 }
 ```
 
@@ -302,17 +300,17 @@ myLogger.info('Transform me!')
 import { Transform } from 'node:stream';
 
 class MyTransformer extends Transform {
-  constructor(opts = {}) {
-    opts.objectMode = true;
-    super(opts);
-  }
+	constructor(opts = {}) {
+		opts.objectMode = true;
+		super(opts);
+	}
 
-  _transform(msg, enc, cb) {
-    if (msg && typeof msg === 'object' && !(msg instanceof Buffer)) {
-      this.push(JSON.stringify(msg, null, 2));
-    }
-    cb();
-  }
+	_transform(msg, enc, cb) {
+		if (msg && typeof msg === 'object' && !(msg instanceof Buffer)) {
+			this.push(JSON.stringify(msg, null, 2));
+		}
+		cb();
+	}
 }
 
 const out = new MyTransformer();
@@ -320,7 +318,7 @@ out.pipe(process.stdout);
 
 const myLogger = new SnoopLogg().enable('*');
 myLogger.pipe(out);
-myLogger.info('Transform me!')
+myLogger.info('Transform me!');
 ```
 
 ![Transform](media/06-transform.webp)
@@ -334,10 +332,10 @@ a transform stream that in turn pipes to several streams:
 import { Transform } from 'node:stream';
 
 class Demuxer extends Transform {
-  _transform(msg, enc, cb) {
-    this.push(msg);
-    cb();
-  }
+	_transform(msg, enc, cb) {
+		this.push(msg);
+		cb();
+	}
 }
 
 const demuxer = new Demuxer();
@@ -365,7 +363,6 @@ for (let i = 1; i <= 10; i++) {
 }
 
 snooplogg.pipe(process.stdout, { flush: true });
-
 ```
 
 ![History](media/07-history.webp)
@@ -437,14 +434,16 @@ based on the supplied string where the color is not too light or too dark.
 
 ```javascript
 snooplogg.config({
-  elements: {
-    namespace(ns, { color, nsToRgb, rgbToAnsi256 }) {
-      const { r, g, b } = nsToRgb(ns);
-      return `${color.ansi256(
-        rgbToAnsi256(r, g, b)
-      )}${ns}${color.close}`;
-    }
-  }
+	elements: {
+		namespace(ns, { color, nsToRgb, rgbToAnsi256 }) {
+			const { r, g, b } = nsToRgb(ns);
+			return `${
+				color.ansi256(
+					rgbToAnsi256(r, g, b)
+				)
+			}${ns}${color.close}`;
+		},
+	},
 });
 ```
 
@@ -456,10 +455,10 @@ A custom formatter that renders a log message.
 snooplogg.info('This is the default format');
 
 snooplogg.config({
-  format(msg, styles) {
-    const { args, colors, elements, method, ns, ts, uptime } = msg;
-    return `${ts.toISOString()} [${method}] ${args.join(' ')}`;
-  }
+	format(msg, styles) {
+		const { args, colors, elements, method, ns, ts, uptime } = msg;
+		return `${ts.toISOString()} [${method}] ${args.join(' ')}`;
+	},
 });
 
 snooplogg.info('This is the custom format');

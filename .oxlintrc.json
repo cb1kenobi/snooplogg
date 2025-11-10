@@ -1,13 +1,13 @@
 {
-	"$schema": "./node_modules/oxlint/configuration_schema.json",
-	"env": {
-		"node": true,
-		"es2024": true
-	},
-	"ignorePatterns": [
-		"coverage/**",
-		"demo/**",
-		"dist/**",
-		"examples/**"
-	]
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "env": {
+    "node": true,
+    "es2024": true
+  },
+  "ignorePatterns": [
+    "coverage/**",
+    "demo/**",
+    "dist/**",
+    "examples/**"
+  ]
 }

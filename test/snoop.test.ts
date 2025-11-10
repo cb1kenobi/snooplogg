@@ -1,8 +1,8 @@
-import { Writable } from 'node:stream';
 import { WritableStream } from 'memory-streams';
+import { Writable } from 'node:stream';
 import { describe, expect, it } from 'vitest';
-import snooplogg, { LogLevels, SnoopLogg, stripRegExp } from '../src/index.js';
 import { SnoopEmitter } from '../src/emitter.js';
+import snooplogg, { LogLevels, SnoopLogg, stripRegExp } from '../src/index.js';
 import type { WritableLike } from '../src/types.js';
 
 describe('SnoopLogg', () => {
@@ -37,50 +37,52 @@ describe('SnoopLogg', () => {
 				'info',
 				'warn',
 				'error',
-				'panic'
+				'panic',
 			];
 
 			for (const method of methods) {
-				const prefix = `\\s*\\d\\.\\d{3}s ${method === 'log' ? '' : method.toUpperCase().padEnd(6)}`;
+				const prefix = `\\s*\\d\\.\\d{3}s ${
+					method === 'log' ? '' : method.toUpperCase().padEnd(6)
+				}`;
 				const testCases = [
 					{
 						input: [`This is a test "${method}" message`],
 						expected: new RegExp(
 							`^${prefix}This is a test "${method}" message$`
-						)
+						),
 					},
 					{
 						input: [
 							'This string uses format to display %s and %d',
 							'this string',
-							3.14
+							3.14,
 						],
 						expected: new RegExp(
 							`^${prefix}This string uses format to display this string and 3.14$`
-						)
+						),
 					},
 					{
 						input: ['This is a multiline\nstring'],
 						expected: new RegExp(
 							`^${prefix}This is a multiline\n${prefix}string$`,
 							'm'
-						)
+						),
 					},
 					{
 						input: [3.14],
-						expected: new RegExp(`^${prefix}3.14$`)
+						expected: new RegExp(`^${prefix}3.14$`),
 					},
 					{
 						input: [new Error('This is an error')],
-						expected: new RegExp(`^${prefix}Error: This is an error`)
+						expected: new RegExp(`^${prefix}Error: This is an error`),
 					},
 					{
 						input: [{ foo: 'bar', colors: ['red', 'green', 'blue'] }],
 						expected: new RegExp(
 							`^${prefix}{\n${prefix}  foo: 'bar',\n${prefix}  colors: \\[\n${prefix}    'red',\n${prefix}    'green',\n${prefix}    'blue'\n${prefix}  \\]\n${prefix}}$`,
 							'm'
-						)
-					}
+						),
+					},
 				];
 
 				for (const { input, expected } of testCases) {
@@ -189,7 +191,7 @@ describe('SnoopLogg', () => {
 			}
 
 			const out = new ObjectWritable({
-				objectMode: true
+				objectMode: true,
 			});
 			const instance = new SnoopLogg().enable('*').pipe(out);
 			instance.log('foo');
@@ -223,7 +225,7 @@ describe('SnoopLogg', () => {
 				.pipe(outFormatted, {
 					format(msg) {
 						return `The message is: ${msg.args[0]}`;
-					}
+					},
 				});
 			instance.log('foo');
 			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
@@ -269,8 +271,10 @@ describe('SnoopLogg', () => {
 			const out = new WritableStream();
 			const instance = new SnoopLogg({
 				format(msg, styles) {
-					return `${msg.elements.timestamp(msg.ts, styles)} ${String(msg.args[0]).toUpperCase()}`;
-				}
+					return `${msg.elements.timestamp(msg.ts, styles)} ${
+						String(msg.args[0]).toUpperCase()
+					}`;
+				},
 			})
 				.enable('*')
 				.pipe(out);
@@ -286,7 +290,7 @@ describe('SnoopLogg', () => {
 			const instance = new SnoopLogg({
 				format(msg) {
 					return `ROOT ${String(msg.args[0]).toUpperCase()}`;
-				}
+				},
 			})
 				.enable('*')
 				.pipe(out);
@@ -321,8 +325,8 @@ describe('SnoopLogg', () => {
 					},
 					uptime() {
 						return '>>>';
-					}
-				}
+					},
+				},
 			})
 				.enable('*')
 				.pipe(out);
@@ -547,7 +551,9 @@ describe('SnoopLogg', () => {
 			instance.panic('panic message');
 
 			const output = out.toString().trim().replace(stripRegExp, '');
-			expect(output).toMatch(/^\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+			expect(output).toMatch(
+				/^\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m
+			);
 		});
 
 		it('should error if new log level is invalid', () => {
@@ -575,7 +581,9 @@ describe('SnoopLogg', () => {
 			instance.panic('panic message');
 
 			let output = out.toString().trim().replace(stripRegExp, '');
-			expect(output).toMatch(/^\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+			expect(output).toMatch(
+				/^\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m
+			);
 
 			instance.setLogLevel(LogLevels.trace);
 			expect(instance.logLevel).toBe(LogLevels.trace);
@@ -588,7 +596,9 @@ describe('SnoopLogg', () => {
 			instance.panic('panic message');
 
 			output = out.toString().trim().replace(stripRegExp, '');
-			expect(output).toMatch(/^\s*\d\.\d{3}s TRACE trace message\n\s*\d\.\d{3}s DEBUG debug message\n\s*\d\.\d{3}s log message\n\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+			expect(output).toMatch(
+				/^\s*\d\.\d{3}s TRACE trace message\n\s*\d\.\d{3}s DEBUG debug message\n\s*\d\.\d{3}s log message\n\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m
+			);
 
 			instance.setLogLevel('debug');
 			expect(instance.logLevel).toBe(LogLevels.debug);
@@ -601,7 +611,9 @@ describe('SnoopLogg', () => {
 			instance.panic('panic message');
 
 			output = out.toString().trim().replace(stripRegExp, '');
-			expect(output).toMatch(/^\s*\d\.\d{3}s DEBUG debug message\n\s*\d\.\d{3}s log message\n\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+			expect(output).toMatch(
+				/^\s*\d\.\d{3}s DEBUG debug message\n\s*\d\.\d{3}s log message\n\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m
+			);
 		});
 
 		it('should filter log level of snooped instances', () => {
@@ -619,7 +631,9 @@ describe('SnoopLogg', () => {
 			instance2.panic('panic message');
 
 			let output = out.toString().trim().replace(stripRegExp, '');
-			expect(output).toMatch(/^\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+			expect(output).toMatch(
+				/^\s*\d\.\d{3}s INFO  info message\n\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m
+			);
 
 			instance.setLogLevel('warn');
 			instance2.trace('trace message');
@@ -631,7 +645,9 @@ describe('SnoopLogg', () => {
 			instance2.panic('panic message');
 
 			output = out.toString().trim().replace(stripRegExp, '');
-			expect(output).toMatch(/^\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m);
+			expect(output).toMatch(
+				/^\s*\d\.\d{3}s WARN  warn message\n\s*\d\.\d{3}s ERROR error message\n\s*\d\.\d{3}s PANIC panic message$/m
+			);
 		});
 
 		it('should set the log level from the environment variable', () => {

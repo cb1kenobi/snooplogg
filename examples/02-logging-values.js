@@ -6,7 +6,7 @@ snooplogg.info('My name is %s and my favorite drink is %s', 'Snoop', 'juice');
 
 snooplogg.debug({
 	name: 'Snoop',
-	occupation: 'Logger'
+	occupation: 'Logger',
 });
 
 snooplogg.trace(3.14);

@@ -165,7 +165,7 @@ export class NanoBuffer<T> {
 
 				i++;
 				return { value: this.buffer[j], done: false };
-			}
+			},
 		};
 	}
 }
