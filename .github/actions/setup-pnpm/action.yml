@@ -1,8 +1,8 @@
-name: "Setup pnpm"
-description: "Install and configure pnpm with caching"
+name: 'Setup pnpm'
+description: 'Install and configure pnpm with caching'
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Install pnpm
       uses: pnpm/action-setup@v4

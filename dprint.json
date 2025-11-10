@@ -18,6 +18,7 @@
   "markup": {
   },
   "yaml": {
+    "quotes": "preferSingle"
   },
   "excludes": [
     "**/node_modules",
