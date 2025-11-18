@@ -1,6 +1,6 @@
 import ansiStyles from 'ansi-styles';
 import { format } from 'node:util';
-import snooplogg, { info, log, SnoopLogg } from '../dist/index.js';
+import snooplogg, { info, log, SnoopLogg } from '../dist/index.mjs';
 
 const { cyan, magenta, redBright } = ansiStyles;
 
