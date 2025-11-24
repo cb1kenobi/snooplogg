@@ -17,17 +17,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
 
       - name: Use Node.js 24
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 24
 
-      - name: Setup dependencies
-        uses: ./.github/actions/setup-deps
-        with:
-          gh-token: ${{ secrets.GH_TOKEN }}
+      - name: Install dependencies
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Check
         run: pnpm check
@@ -43,17 +49,23 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
 
       - name: Use Node.js ${{ matrix.node }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node == 18 && 20 || matrix.node }}
 
-      - name: Setup dependencies
-        uses: ./.github/actions/setup-deps
-        with:
-          gh-token: ${{ secrets.GH_TOKEN }}
+      - name: Install dependencies
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build
         env:
@@ -62,7 +74,7 @@ jobs:
 
       - name: Install Node 18
         if: matrix.node == 18
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: 18
 
@@ -79,17 +91,23 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
 
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: latest
 
-      - name: Setup dependencies
-        uses: ./.github/actions/setup-deps
-        with:
-          gh-token: ${{ secrets.GH_TOKEN }}
+      - name: Install dependencies
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build
         env:
@@ -109,17 +127,23 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
 
       - name: Install Deno
         uses: denoland/setup-deno@v2
         with:
           deno-version: latest
 
-      - name: Setup dependencies
-        uses: ./.github/actions/setup-deps
-        with:
-          gh-token: ${{ secrets.GH_TOKEN }}
+      - name: Install dependencies
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: pnpm install --frozen-lockfile --ignore-scripts
 
       - name: Build
         env:
