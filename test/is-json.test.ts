@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { isJSON } from '../src/is-json.js';
+import { describe, expect, it } from 'vitest';
 
 describe('isJSON()', () => {
 	it('should detect a JSON object', () => {

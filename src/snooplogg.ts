@@ -1,4 +1,3 @@
-import ansiStyles from 'ansi-styles';
 import { defaultFormatter } from './default-formatter.js';
 import { NanoBuffer } from './nanobuffer.js';
 import { nsToRgb } from './ns-to-rgb.js';
@@ -16,6 +15,7 @@ import {
 	type StyleHelpers,
 	type WritableLike,
 } from './types.js';
+import ansiStyles from 'ansi-styles';
 
 /**
  * Describes the various log methods such as `info()`, `warn()`, etc.
@@ -58,8 +58,7 @@ export const defaultElements: FormatLogElements = {
 						const stlyedMethod = method
 							? `${styles.whiteBright.open}${styles.italic.open}${method}${styles.italic.close}${styles.whiteBright.close}`
 							: '';
-						result +=
-							`${stlyedMethod}${styles.white.open}${location}${styles.white.close}`;
+						result += `${stlyedMethod}${styles.white.open}${location}${styles.white.close}`;
 					}
 					return result;
 				})
@@ -125,9 +124,10 @@ export const defaultElements: FormatLogElements = {
 	 * @returns The formatted timestamp.
 	 */
 	timestamp(ts: Date, styles: StyleHelpers) {
-		return `${styles.gray.open}${
-			ts.toISOString().replace('T', ' ').replace('Z', '')
-		}${styles.gray.close}`;
+		return `${styles.gray.open}${ts
+			.toISOString()
+			.replace('T', ' ')
+			.replace('Z', '')}${styles.gray.close}`;
 	},
 
 	/**
@@ -192,11 +192,7 @@ export class Logger extends Functionator {
 	 * @param namespace The namespace of the logger.
 	 * @access public
 	 */
-	constructor(
-		root: SnoopLogg,
-		parent: Logger | null = null,
-		namespace?: string
-	) {
+	constructor(root: SnoopLogg, parent: Logger | null = null, namespace?: string) {
 		super((namespace: string) => this.initChild(namespace));
 
 		this.nsPath = [];
@@ -207,9 +203,7 @@ export class Logger extends Functionator {
 				throw new TypeError('Expected namespace to be a string');
 			}
 			if (/[\s,|]+/.test(namespace)) {
-				throw new Error(
-					'Namespace cannot contain spaces, commas, or pipe characters'
-				);
+				throw new Error('Namespace cannot contain spaces, commas, or pipe characters');
 			}
 
 			this.nsPath = parent ? [...parent.nsPath, namespace] : [namespace];
@@ -389,9 +383,7 @@ export class SnoopLogg extends Functionator {
 			} catch (err: unknown) {
 				if (err instanceof Error) {
 					err.message = `Invalid history size: ${err.message}`;
-					err.stack = `${err.toString()}${
-						err.stack?.substring(err.stack.indexOf('\n')) || ''
-					}`;
+					err.stack = `${err.toString()}${err.stack?.substring(err.stack.indexOf('\n')) || ''}`;
 				}
 				throw err;
 			}
@@ -522,11 +514,11 @@ export class SnoopLogg extends Functionator {
 		}
 
 		if (
-			!namespace
-			|| allow === '*'
-			|| (allow instanceof RegExp
-				&& allow.test(namespace)
-				&& (!this.ignore || !this.ignore.test(namespace)))
+			!namespace ||
+			allow === '*' ||
+			(allow instanceof RegExp &&
+				allow.test(namespace) &&
+				(!this.ignore || !this.ignore.test(namespace)))
 		) {
 			// nothing to filter
 			return true;
@@ -611,9 +603,9 @@ export class SnoopLogg extends Functionator {
 				this.dispatch(
 					nsPrefix
 						? {
-							...msg,
-							ns: `${nsPrefix}${msg.ns || ''}`,
-						}
+								...msg,
+								ns: `${nsPrefix}${msg.ns || ''}`,
+							}
 						: msg
 				);
 			}
@@ -654,31 +646,29 @@ export class SnoopLogg extends Functionator {
 				const formatter = config?.format || this.format || defaultFormatter;
 				const colors = config.colors ?? (this.colors && stream.isTTY !== false);
 
-				let formatted = `${
-					formatter(
-						{
-							args,
-							colors,
-							elements: {
-								...defaultElements,
-								...this.elements,
-								...config?.elements,
-							},
-							level,
-							method,
-							ns,
-							ts,
-							uptime,
+				let formatted = `${formatter(
+					{
+						args,
+						colors,
+						elements: {
+							...defaultElements,
+							...this.elements,
+							...config?.elements,
 						},
-						Object.defineProperties(
-							{
-								...ansiStyles,
-								nsToRgb,
-							},
-							Object.getOwnPropertyDescriptors(ansiStyles)
-						)
+						level,
+						method,
+						ns,
+						ts,
+						uptime,
+					},
+					Object.defineProperties(
+						{
+							...ansiStyles,
+							nsToRgb,
+						},
+						Object.getOwnPropertyDescriptors(ansiStyles)
 					)
-				}\n`;
+				)}\n`;
 
 				if (!colors) {
 					formatted = formatted.replace(stripRegExp, '');

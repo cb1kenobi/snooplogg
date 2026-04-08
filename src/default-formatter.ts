@@ -1,6 +1,6 @@
-import { format, inspect } from 'node:util';
 import { isJSON } from './is-json.js';
 import type { LogMessage, StyleHelpers } from './types.js';
+import { format, inspect } from 'node:util';
 
 /**
  * Formats each log message in the format "<uptime> <namespace> <method> <msg>".
@@ -27,14 +27,14 @@ export function defaultFormatter(
 		ns ? `${elements.namespace(ns, styles)} ` : ''
 	}${method && method !== 'log' ? `${elements.method(method, styles)} ` : ''}`;
 
-	const formattedArgs = args.map(it =>
+	const formattedArgs = args.map((it) =>
 		isJSON(it)
 			? inspect(it, {
-				breakLength: 0,
-				colors,
-				depth: 4,
-				showHidden: false,
-			})
+					breakLength: 0,
+					colors,
+					depth: 4,
+					showHidden: false,
+				})
 			: it
 	);
 
@@ -47,6 +47,6 @@ export function defaultFormatter(
 
 	return format(...formattedArgs)
 		.split('\n')
-		.map(s => prefix + elements.message(s, method, styles))
+		.map((s) => prefix + elements.message(s, method, styles))
 		.join('\n');
 }

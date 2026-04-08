@@ -1,9 +1,9 @@
-import { WritableStream } from 'memory-streams';
-import { Writable } from 'node:stream';
-import { describe, expect, it } from 'vitest';
 import { SnoopEmitter } from '../src/emitter.js';
 import snooplogg, { LogLevels, SnoopLogg, stripRegExp } from '../src/index.js';
 import type { WritableLike } from '../src/types.js';
+import { WritableStream } from 'memory-streams';
+import { Writable } from 'node:stream';
+import { describe, expect, it } from 'vitest';
 
 describe('SnoopLogg', () => {
 	describe('constructor()', () => {
@@ -30,15 +30,7 @@ describe('SnoopLogg', () => {
 
 	describe('log methods', () => {
 		it('should write log messages to the specified stream', () => {
-			const methods = [
-				'log',
-				'trace',
-				'debug',
-				'info',
-				'warn',
-				'error',
-				'panic',
-			];
+			const methods = ['log', 'trace', 'debug', 'info', 'warn', 'error', 'panic'];
 
 			for (const method of methods) {
 				const prefix = `\\s*\\d\\.\\d{3}s ${
@@ -47,26 +39,17 @@ describe('SnoopLogg', () => {
 				const testCases = [
 					{
 						input: [`This is a test "${method}" message`],
-						expected: new RegExp(
-							`^${prefix}This is a test "${method}" message$`
-						),
+						expected: new RegExp(`^${prefix}This is a test "${method}" message$`),
 					},
 					{
-						input: [
-							'This string uses format to display %s and %d',
-							'this string',
-							3.14,
-						],
+						input: ['This string uses format to display %s and %d', 'this string', 3.14],
 						expected: new RegExp(
 							`^${prefix}This string uses format to display this string and 3.14$`
 						),
 					},
 					{
 						input: ['This is a multiline\nstring'],
-						expected: new RegExp(
-							`^${prefix}This is a multiline\n${prefix}string$`,
-							'm'
-						),
+						expected: new RegExp(`^${prefix}This is a multiline\n${prefix}string$`, 'm'),
 					},
 					{
 						input: [3.14],
@@ -100,9 +83,7 @@ describe('SnoopLogg', () => {
 		it('should error if enable filter is invalid', () => {
 			expect(() => {
 				new SnoopLogg().enable(123 as any);
-			}).toThrowError(
-				new TypeError('Expected pattern to be a string or regex')
-			);
+			}).toThrowError(new TypeError('Expected pattern to be a string or regex'));
 		});
 
 		it('should test if a logger is enabled', () => {
@@ -152,23 +133,17 @@ describe('SnoopLogg', () => {
 			const instance = new SnoopLogg().enable('*').pipe(out).pipe(out);
 			expect(instance.streams.size).toBe(1);
 			instance.log('foo');
-			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
-				/^\s*\d\.\d{3}s foo$/
-			);
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo$/);
 		});
 
 		it('should unpipe a stream', () => {
 			const out = new WritableStream();
 			const instance = new SnoopLogg().enable('*').pipe(out);
 			instance.log('foo');
-			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
-				/^\s*\d\.\d{3}s foo$/
-			);
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo$/);
 			instance.unpipe(out);
 			instance.log('bar');
-			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
-				/^\s*\d\.\d{3}s foo$/
-			);
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo$/);
 		});
 
 		it('should error if unpipe stream is invalid', () => {
@@ -228,12 +203,8 @@ describe('SnoopLogg', () => {
 					},
 				});
 			instance.log('foo');
-			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
-				/^\s*\d\.\d{3}s foo$/
-			);
-			expect(outFormatted.toString().trim().replace(stripRegExp, '')).toBe(
-				'The message is: foo'
-			);
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo$/);
+			expect(outFormatted.toString().trim().replace(stripRegExp, '')).toBe('The message is: foo');
 		});
 
 		it('should pipe to a custom writable-like stream', () => {
@@ -253,9 +224,7 @@ describe('SnoopLogg', () => {
 			const instance = new SnoopLogg().enable('*').pipe(transformer);
 			instance.log('foo');
 
-			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
-				/^\s*\d\.\d{3}s foo$/
-			);
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo$/);
 		});
 	});
 
@@ -271,18 +240,14 @@ describe('SnoopLogg', () => {
 			const out = new WritableStream();
 			const instance = new SnoopLogg({
 				format(msg, styles) {
-					return `${msg.elements.timestamp(msg.ts, styles)} ${
-						String(msg.args[0]).toUpperCase()
-					}`;
+					return `${msg.elements.timestamp(msg.ts, styles)} ${String(msg.args[0]).toUpperCase()}`;
 				},
 			})
 				.enable('*')
 				.pipe(out);
 			instance.log('foo');
 			const output = out.toString().trim().replace(stripRegExp, '');
-			expect(output).toMatch(
-				/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} FOO$/
-			);
+			expect(output).toMatch(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\.\d{3} FOO$/);
 		});
 
 		it('should inherit parent formatter', () => {
@@ -311,9 +276,7 @@ describe('SnoopLogg', () => {
 			}).toThrowError(new TypeError('Expected elements to be an object'));
 			expect(() => {
 				instance.config({ elements: { error: 'foo' as any } });
-			}).toThrowError(
-				new TypeError('Expected "error" elements to be a function')
-			);
+			}).toThrowError(new TypeError('Expected "error" elements to be a function'));
 		});
 
 		it('should apply a custom format', () => {
@@ -343,9 +306,7 @@ describe('SnoopLogg', () => {
 			const foo = instance('foo');
 			const bar = foo('bar');
 			bar.log('baz');
-			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
-				/^\s*\d\.\d{3}s foo:bar baz$/
-			);
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo:bar baz$/);
 		});
 
 		it('should enable output by root', () => {
@@ -395,15 +356,11 @@ describe('SnoopLogg', () => {
 
 			expect(() => {
 				instance('foo, bar');
-			}).toThrowError(
-				new Error('Namespace cannot contain spaces, commas, or pipe characters')
-			);
+			}).toThrowError(new Error('Namespace cannot contain spaces, commas, or pipe characters'));
 
 			expect(() => {
 				instance('foo | bar');
-			}).toThrowError(
-				new Error('Namespace cannot contain spaces, commas, or pipe characters')
-			);
+			}).toThrowError(new Error('Namespace cannot contain spaces, commas, or pipe characters'));
 		});
 	});
 
@@ -419,16 +376,12 @@ describe('SnoopLogg', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
 				instance.config({ historySize: 'foo' } as any);
-			}).toThrowError(
-				new TypeError('Invalid history size: Expected max size to be a number')
-			);
+			}).toThrowError(new TypeError('Invalid history size: Expected max size to be a number'));
 
 			expect(() => {
 				instance.config({ historySize: -1 } as any);
 			}).toThrowError(
-				new RangeError(
-					'Invalid history size: Expected max size to be zero or greater'
-				)
+				new RangeError('Invalid history size: Expected max size to be zero or greater')
 			);
 		});
 
@@ -438,9 +391,7 @@ describe('SnoopLogg', () => {
 
 			const out = new WritableStream();
 			instance.pipe(out, { flush: true });
-			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(
-				/^\s*\d\.\d{3}s foo$/
-			);
+			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo$/);
 		});
 	});
 
@@ -448,9 +399,7 @@ describe('SnoopLogg', () => {
 		it('should error if namespace is invalid', () => {
 			expect(() => {
 				new SnoopLogg().snoop(123 as any);
-			}).toThrowError(
-				new TypeError('Expected namespace prefix to be a string')
-			);
+			}).toThrowError(new TypeError('Expected namespace prefix to be a string'));
 		});
 
 		it('should snoop on another instance', () => {

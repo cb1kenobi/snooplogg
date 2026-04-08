@@ -24,8 +24,7 @@ export function nsToRgb(text: string): Color {
 	const s = ((hash % 50) + 50) / 100;
 	const l = ((hash % 60) + 30) / 100;
 	const a = s * Math.min(l, 1 - l);
-	const f = (n: number, k = (n + h / 30) % 12) =>
-		l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
+	const f = (n: number, k = (n + h / 30) % 12) => l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1);
 
 	return {
 		r: Math.round(255 * f(0)),

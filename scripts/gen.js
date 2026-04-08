@@ -1,9 +1,9 @@
+import { stripRegExp } from '../dist/index.js';
 import ansiStyles from 'ansi-styles';
 import { spawnSync } from 'node:child_process';
 import { readdir } from 'node:fs/promises';
 import { dirname, join, parse } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { stripRegExp } from '../dist/index.js';
 
 const wo = ansiStyles.bgWhiteBright.open;
 const wc = ansiStyles.bgWhiteBright.close;
@@ -24,18 +24,14 @@ for (const filename of files.sort()) {
 		const { stdout } = spawnSync(process.execPath, [file], {
 			encoding: 'utf8',
 		});
-		console.log(
-			`\n${wo} ${bo}${name}${bc}${' '.padEnd(width - name.length)} ${wc}`
-		);
+		console.log(`\n${wo} ${bo}${name}${bc}${' '.padEnd(width - name.length)} ${wc}`);
 		console.log(`${wo} ${wc}${' '.repeat(width)}${wo} ${wc}`);
 		for (let line of stdout.trimEnd().split('\n')) {
 			if (/\/users\//i.test(line)) {
 				line = line.replace(/(file:.+snooplogg)/i, 'file:.../snooplogg');
 			}
 			const len = line.replace(stripRegExp, '').length;
-			console.log(
-				`${wo} ${wc}${line}${width - len > 0 ? ' '.repeat(width - len) : ''}${wo} ${wc}`
-			);
+			console.log(`${wo} ${wc}${line}${width - len > 0 ? ' '.repeat(width - len) : ''}${wo} ${wc}`);
 		}
 		console.log(`${wo} ${wc}${' '.repeat(width)}${wo} ${wc}`);
 		console.log(`${wo}${' '.padEnd(width + 2)}${wc}`);

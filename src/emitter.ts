@@ -30,9 +30,7 @@ export class SnoopEmitter {
 	off(event: string, listenerToRemove: (...args: any[]) => void): this {
 		const listeners = this.events[event];
 		if (listeners) {
-			this.events[event] = listeners.filter(
-				(listener) => listener !== listenerToRemove
-			);
+			this.events[event] = listeners.filter((listener) => listener !== listenerToRemove);
 		}
 		return this;
 	}

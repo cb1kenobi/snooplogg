@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { nsToRgb } from '../src/index.js';
+import { describe, expect, it } from 'vitest';
 
 describe('nsToRGB()', () => {
 	it('should deterministically convert namespace to RGB color', () => {

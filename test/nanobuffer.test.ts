@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { NanoBuffer } from '../src/nanobuffer.js';
+import { describe, expect, it } from 'vitest';
 
 describe('NanoBuffer', () => {
 	it('should throw error if invalid max size', () => {

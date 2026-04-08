@@ -1,5 +1,5 @@
-import type ansiStyles from 'ansi-styles';
 import type { nsToRgb } from './ns-to-rgb.js';
+import type ansiStyles from 'ansi-styles';
 
 export interface WritableLike {
 	isTTY?: boolean;
