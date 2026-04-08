@@ -7,23 +7,15 @@
     "trailingCommas": "onlyMultiLine",
     "useTabs": true
   },
-  "json": {
-  },
-  "markdown": {
-  },
-  "toml": {
-  },
-  "malva": {
-  },
-  "markup": {
-  },
+  "json": {},
+  "markdown": {},
+  "toml": {},
+  "malva": {},
+  "markup": {},
   "yaml": {
     "quotes": "preferSingle"
   },
-  "excludes": [
-    "**/node_modules",
-    "**/*-lock.json"
-  ],
+  "excludes": ["**/node_modules", "**/*-lock.json"],
   "plugins": [
     "https://plugins.dprint.dev/typescript-0.95.12.wasm",
     "https://plugins.dprint.dev/json-0.21.0.wasm",

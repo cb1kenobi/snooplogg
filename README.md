@@ -215,7 +215,9 @@ You can pipe SnoopLogg into one or more writable-like streams such as a file:
 
 ```javascript
 const out = fs.createWriteStream('debug.log');
-snooplogg.pipe(out, {/* snooplogg stream options */});
+snooplogg.pipe(out, {
+	/* snooplogg stream options */
+});
 snooplogg.info('This will be written to stderr and a file');
 ```
 
@@ -437,11 +439,7 @@ snooplogg.config({
 	elements: {
 		namespace(ns, { color, nsToRgb, rgbToAnsi256 }) {
 			const { r, g, b } = nsToRgb(ns);
-			return `${
-				color.ansi256(
-					rgbToAnsi256(r, g, b)
-				)
-			}${ns}${color.close}`;
+			return `${color.ansi256(rgbToAnsi256(r, g, b))}${ns}${color.close}`;
 		},
 	},
 });

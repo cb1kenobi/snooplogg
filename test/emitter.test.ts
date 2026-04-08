@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
 import { SnoopEmitter } from '../src/emitter.js';
+import { describe, expect, it } from 'vitest';
 
 describe('SnoopEmitter', () => {
 	it('should emit a message', () => {

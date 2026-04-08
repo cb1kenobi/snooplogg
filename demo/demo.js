@@ -1,15 +1,13 @@
+import snooplogg, { info, log, SnoopLogg } from '../dist/index.mjs';
 import ansiStyles from 'ansi-styles';
 import { format } from 'node:util';
-import snooplogg, { info, log, SnoopLogg } from '../dist/index.mjs';
 
 const { cyan, magenta, redBright } = ansiStyles;
 
 console.log(`${magenta.open}Welcome to SnoopLogg demo!${magenta.close}\n`);
 
 if (process.env.SNOOPLOGG_LEVEL) {
-	console.log(
-		`Filtering by log level ${cyan.open}'${process.env.SNOOPLOGG_LEVEL}'${cyan.close}\n`
-	);
+	console.log(`Filtering by log level ${cyan.open}'${process.env.SNOOPLOGG_LEVEL}'${cyan.close}\n`);
 }
 
 log("Congratulations! You've activated SnoopLogg!\n");
@@ -95,9 +93,7 @@ log(`\n${redBright.open}♥${redBright.close} Thank you for trying SnoopLogg!`);
 const runtime = process.versions.bun ? 'bun' : process.versions.deno ? 'deno' : 'node';
 
 if (!process.env.SNOOPLOGG && !process.env.DEBUG) {
-	console.log(
-		`Try running: ${cyan.open}SNOOPLOGG=* ${runtime} demo.js${cyan.close}`
-	);
+	console.log(`Try running: ${cyan.open}SNOOPLOGG=* ${runtime} demo.js${cyan.close}`);
 } else if (!process.env.SNOOPLOGG_LEVEL) {
 	log(`
 Don't forget to check out the log level!

@@ -1,5 +1,5 @@
-import { Transform } from 'node:stream';
 import { SnoopLogg } from '../dist/index.js';
+import { Transform } from 'node:stream';
 
 class MyTransformer extends Transform {
 	constructor(opts = {}) {
@@ -12,7 +12,7 @@ class MyTransformer extends Transform {
 			this.push(
 				JSON.stringify(msg, null, 2)
 					.split('\n')
-					.map(s => `  ${s}`)
+					.map((s) => `  ${s}`)
 					.join('\n')
 			);
 		}
