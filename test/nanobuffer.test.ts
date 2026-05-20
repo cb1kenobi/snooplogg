@@ -209,4 +209,15 @@ describe('NanoBuffer', () => {
 
 		expect(r.value).toBeUndefined();
 	});
+
+	it('should truncate max size', () => {
+		const b = new NanoBuffer(1.5);
+		for (let i = 0; i < 15; i++) {
+			b.push(`foo${i}`);
+		}
+		expect(b.maxSize).toBe(1);
+		expect(b.size).toBe(1);
+		expect(b.head).toBe(0);
+		expect(b.buffer).toEqual(['foo14']);
+	});
 });

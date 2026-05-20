@@ -1,6 +1,13 @@
 # v7.0.0 (May 20, 2026)
 
 - BREAKING CHANGE: Drop Node.js 20 and older
+- fix: Don't flush all streams on new pipe
+- fix: Don't create `allow` regex if there are no allowed patterns
+- fix: Don't process events if the `globalThis.snooplogg` instance has been
+  initialized yet
+- fix: Store truncated nanobuffer max size
+- fix: Use monotonic id for each message
+- fix: Guard against `enable()` regex injection
 - chore: Update dependencies
 
 # v6.1.1 (October 22, 2025)

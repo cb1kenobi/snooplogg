@@ -37,7 +37,7 @@ export class NanoBuffer<T> {
 		}
 
 		this.buffer = Array(maxSize | 0);
-		this._maxSize = maxSize;
+		this._maxSize = maxSize | 0;
 	}
 
 	/**

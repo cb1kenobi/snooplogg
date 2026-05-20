@@ -116,6 +116,10 @@ describe('SnoopLogg', () => {
 			expect(instance.isEnabled('foo')).toBe(true);
 			expect(instance.isEnabled('bar')).toBe(false);
 
+			instance.enable('-bar');
+			expect(instance.isEnabled('foo')).toBe(false);
+			expect(instance.isEnabled('bar')).toBe(false);
+
 			instance.enable('');
 			expect(instance.isEnabled('foo')).toBe(false);
 		});
@@ -376,13 +380,11 @@ describe('SnoopLogg', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
 				instance.config({ historySize: 'foo' } as any);
-			}).toThrowError(new TypeError('Invalid history size: Expected max size to be a number'));
+			}).toThrow(new TypeError('Invalid history size: Expected max size to be a number'));
 
 			expect(() => {
 				instance.config({ historySize: -1 } as any);
-			}).toThrowError(
-				new RangeError('Invalid history size: Expected max size to be zero or greater')
-			);
+			}).toThrow(new RangeError('Invalid history size: Expected max size to be zero or greater'));
 		});
 
 		it('should flush the history to a piped stream', () => {
@@ -391,7 +393,12 @@ describe('SnoopLogg', () => {
 
 			const out = new WritableStream();
 			instance.pipe(out, { flush: true });
+
+			const out2 = new WritableStream();
+			instance.pipe(out2, { flush: true });
+
 			expect(out.toString().trim().replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo$/);
+			expect(out2.toString().trim().replace(stripRegExp, '')).toMatch(/^\s*\d\.\d{3}s foo$/);
 		});
 	});
 

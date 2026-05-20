@@ -142,6 +142,13 @@ export const defaultElements: FormatLogElements = {
 };
 
 /**
+ * Escapes all regex metacharacters in a string except `*`, which is
+ * intentionally left unescaped so the caller can replace it with `.*?`
+ * for glob-style wildcard matching.
+ */
+const escapeRegexSegment = (s: string) => s.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+
+/**
  * Regular expression to strip ansi color sequences.
  */
 const pattern = [
@@ -312,7 +319,7 @@ export class SnoopLogg extends Functionator {
 	elements: LogElements = {};
 	format?: LogFormatter | null;
 	history: NanoBuffer<RawLogMessage> = new NanoBuffer();
-	id: number = Math.round(Math.random() * 1e9);
+	id: number = Date.now() + Math.random();
 	ignore: RegExp | null = null;
 	logLevel: LogLevelValue = LogLevels.trace;
 	onSnoopMessage: ((msg: RawLogMessage) => void) | null = null;
@@ -427,7 +434,7 @@ export class SnoopLogg extends Functionator {
 		this.writeToStreams(msg);
 
 		if (msg.id === this.id) {
-			globalThis.snooplogg.emit('message', msg);
+			globalThis.snooplogg?.emit('message', msg);
 		}
 	}
 
@@ -478,16 +485,19 @@ export class SnoopLogg extends Functionator {
 			for (let p of pattern.split(/[,|]+/)) {
 				p = p.trim();
 				if (p) {
-					p = p.replaceAll('*', '.*?');
-					if (p[0] === '-') {
-						ignores.push(p.slice(1));
+					const isIgnore = p[0] === '-';
+					p = escapeRegexSegment(isIgnore ? p.slice(1) : p).replaceAll('*', '.*?');
+					if (isIgnore) {
+						ignores.push(p);
 					} else {
 						allows.push(p);
 					}
 				}
 			}
 
-			allow = new RegExp(`^(${allows.join('|')})(:.+|$)`);
+			if (allows.length) {
+				allow = new RegExp(`^(${allows.join('|')})(:.+|$)`);
+			}
 
 			if (ignores.length) {
 				ignore = new RegExp(`^(${ignores.join('|')})$`);
@@ -554,9 +564,10 @@ export class SnoopLogg extends Functionator {
 		stream.on('end', onEnd);
 
 		if (opts.flush) {
+			const config = this.streams.get(stream)!;
 			for (const msg of this.history) {
-				if (msg) {
-					this.writeToStreams(msg);
+				if (msg && this.isEnabled(msg.ns) && msg.level >= this.logLevel) {
+					this.writeToStream(stream, config, msg);
 				}
 			}
 		}
@@ -611,7 +622,7 @@ export class SnoopLogg extends Functionator {
 			}
 		};
 
-		globalThis.snooplogg.on('message', this.onSnoopMessage);
+		globalThis.snooplogg?.on('message', this.onSnoopMessage);
 
 		return this;
 	}
@@ -623,10 +634,59 @@ export class SnoopLogg extends Functionator {
 	 */
 	unsnoop(): this {
 		if (this.onSnoopMessage) {
-			globalThis.snooplogg.off('message', this.onSnoopMessage);
+			globalThis.snooplogg?.off('message', this.onSnoopMessage);
 			this.onSnoopMessage = null;
 		}
 		return this;
+	}
+
+	/**
+	 * Formats and writes a single log message to one stream.
+	 * @param stream The target stream.
+	 * @param config The stream-specific configuration.
+	 * @param msg The raw log message.
+	 * @access private
+	 */
+	writeToStream(stream: WritableLike, config: StreamConfig, msg: RawLogMessage): void {
+		const { args, level, method, ns, ts, uptime } = msg;
+
+		if (stream.writableObjectMode) {
+			stream.write(msg);
+			return;
+		}
+
+		const formatter = config?.format || this.format || defaultFormatter;
+		const colors = config.colors ?? (this.colors && stream.isTTY !== false);
+
+		let formatted = `${formatter(
+			{
+				args,
+				colors,
+				elements: {
+					...defaultElements,
+					...this.elements,
+					...config?.elements,
+				},
+				level,
+				method,
+				ns,
+				ts,
+				uptime,
+			},
+			Object.defineProperties(
+				{
+					...ansiStyles,
+					nsToRgb,
+				},
+				Object.getOwnPropertyDescriptors(ansiStyles)
+			)
+		)}\n`;
+
+		if (!colors) {
+			formatted = formatted.replace(stripRegExp, '');
+		}
+
+		stream.write(formatted);
 	}
 
 	/**
@@ -635,56 +695,14 @@ export class SnoopLogg extends Functionator {
 	 * @access private
 	 */
 	writeToStreams(msg: RawLogMessage): void {
-		const { args, level, method, ns, ts, uptime } = msg;
-		if (this.isEnabled(ns) && level >= this.logLevel) {
+		if (this.isEnabled(msg.ns) && msg.level >= this.logLevel) {
 			for (const [stream, config] of this.streams.entries()) {
-				if (stream.writableObjectMode) {
-					stream.write(msg);
-					continue;
-				}
-
-				const formatter = config?.format || this.format || defaultFormatter;
-				const colors = config.colors ?? (this.colors && stream.isTTY !== false);
-
-				let formatted = `${formatter(
-					{
-						args,
-						colors,
-						elements: {
-							...defaultElements,
-							...this.elements,
-							...config?.elements,
-						},
-						level,
-						method,
-						ns,
-						ts,
-						uptime,
-					},
-					Object.defineProperties(
-						{
-							...ansiStyles,
-							nsToRgb,
-						},
-						Object.getOwnPropertyDescriptors(ansiStyles)
-					)
-				)}\n`;
-
-				if (!colors) {
-					formatted = formatted.replace(stripRegExp, '');
-				}
-
-				stream.write(formatted);
+				this.writeToStream(stream, config, msg);
 			}
 		}
 	}
 
-	/**
-	 * Logs a message without a log method.
-	 * @param args The log message arguments.
-	 * @returns The logger instance.
-	 * @access public
-	 */
+	/** Proxy log methods delegating to the root {@link Logger} instance. */
 	get trace(): LogMethod {
 		return this.logger.trace;
 	}
