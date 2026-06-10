@@ -59,7 +59,7 @@
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "25.9.1",
+    "@types/node": "25.9.2",
     "@vitest/coverage-v8": "4.1.7",
     "ansi-styles": "6.2.3",
     "lefthook": "2.1.9",
