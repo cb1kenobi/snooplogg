@@ -1,3 +1,7 @@
+# v7.0.1 (June 30, 2026)
+
+- chore: Update dependencies
+
 # v7.0.0 (May 20, 2026)
 
 - BREAKING CHANGE: Drop Node.js 20 and older
