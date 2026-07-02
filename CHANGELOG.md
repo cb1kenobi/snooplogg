@@ -1,3 +1,10 @@
+# v8.0.0 (July 1, 2026)
+
+- BREAKING CHANGE: Removed default export. Use `import { snooplogg } from 'snooplogg'` instead.
+- fix: Rename internal emitter from `snooplogg` to `__snooplogg__`
+- fix: Export default instance as `snooplogg`
+- chore: Update dependencies
+
 # v7.0.1 (June 30, 2026)
 
 - chore: Update dependencies

@@ -1,5 +1,5 @@
 import { SnoopEmitter } from '../src/emitter.js';
-import snooplogg, { LogLevels, SnoopLogg, stripRegExp } from '../src/index.js';
+import { snooplogg, LogLevels, SnoopLogg, stripRegExp } from '../src/index.js';
 import type { WritableLike } from '../src/types.js';
 import { WritableStream } from 'memory-streams';
 import { Writable } from 'node:stream';
@@ -14,7 +14,7 @@ describe('SnoopLogg', () => {
 		it('should error if SnoopLogg options are invalid', () => {
 			expect(() => {
 				new SnoopLogg('foo' as any);
-			}).toThrowError(new TypeError('Expected logger options to be an object'));
+			}).toThrow(new TypeError('Expected logger options to be an object'));
 		});
 	});
 
@@ -24,7 +24,7 @@ describe('SnoopLogg', () => {
 
 			expect(() => {
 				instance.config('foo' as any);
-			}).toThrowError(new TypeError('Expected logger options to be an object'));
+			}).toThrow(new TypeError('Expected logger options to be an object'));
 		});
 	});
 
@@ -83,7 +83,7 @@ describe('SnoopLogg', () => {
 		it('should error if enable filter is invalid', () => {
 			expect(() => {
 				new SnoopLogg().enable(123 as any);
-			}).toThrowError(new TypeError('Expected pattern to be a string or regex'));
+			}).toThrow(new TypeError('Expected pattern to be a string or regex'));
 		});
 
 		it('should test if a logger is enabled', () => {
@@ -129,7 +129,7 @@ describe('SnoopLogg', () => {
 		it('should error if pipe stream is invalid', () => {
 			expect(() => {
 				new SnoopLogg().pipe('foo' as any);
-			}).toThrowError(new TypeError('Invalid stream'));
+			}).toThrow(new TypeError('Invalid stream'));
 		});
 
 		it('should only add the pipe stream once', () => {
@@ -153,7 +153,7 @@ describe('SnoopLogg', () => {
 		it('should error if unpipe stream is invalid', () => {
 			expect(() => {
 				new SnoopLogg().unpipe('foo' as any);
-			}).toThrowError(new TypeError('Invalid stream'));
+			}).toThrow(new TypeError('Invalid stream'));
 		});
 
 		it('should pipe to stream with object mode', async () => {
@@ -237,7 +237,7 @@ describe('SnoopLogg', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
 				instance.config({ format: 'foo' } as any);
-			}).toThrowError(new TypeError('Expected format to be a function'));
+			}).toThrow(new TypeError('Expected format to be a function'));
 		});
 
 		it('should apply a custom format', () => {
@@ -277,10 +277,10 @@ describe('SnoopLogg', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
 				instance.config({ elements: 'foo' } as any);
-			}).toThrowError(new TypeError('Expected elements to be an object'));
+			}).toThrow(new TypeError('Expected elements to be an object'));
 			expect(() => {
 				instance.config({ elements: { error: 'foo' as any } });
-			}).toThrowError(new TypeError('Expected "error" elements to be a function'));
+			}).toThrow(new TypeError('Expected "error" elements to be a function'));
 		});
 
 		it('should apply a custom format', () => {
@@ -356,15 +356,15 @@ describe('SnoopLogg', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
 				instance(123 as any);
-			}).toThrowError(new TypeError('Expected namespace to be a string'));
+			}).toThrow(new TypeError('Expected namespace to be a string'));
 
 			expect(() => {
 				instance('foo, bar');
-			}).toThrowError(new Error('Namespace cannot contain spaces, commas, or pipe characters'));
+			}).toThrow(new Error('Namespace cannot contain spaces, commas, or pipe characters'));
 
 			expect(() => {
 				instance('foo | bar');
-			}).toThrowError(new Error('Namespace cannot contain spaces, commas, or pipe characters'));
+			}).toThrow(new Error('Namespace cannot contain spaces, commas, or pipe characters'));
 		});
 	});
 
@@ -406,7 +406,7 @@ describe('SnoopLogg', () => {
 		it('should error if namespace is invalid', () => {
 			expect(() => {
 				new SnoopLogg().snoop(123 as any);
-			}).toThrowError(new TypeError('Expected namespace prefix to be a string'));
+			}).toThrow(new TypeError('Expected namespace prefix to be a string'));
 		});
 
 		it('should snoop on another instance', () => {
@@ -461,7 +461,7 @@ describe('SnoopLogg', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
 				instance.config({ colors: 'foo' as any });
-			}).toThrowError(new TypeError('Expected colors to be a boolean'));
+			}).toThrow(new TypeError('Expected colors to be a boolean'));
 		});
 
 		it('should strip colors', () => {
@@ -487,10 +487,10 @@ describe('SnoopLogg', () => {
 		it('should error if default log level is invalid', () => {
 			expect(() => {
 				new SnoopLogg({ logLevel: 'foo' as any });
-			}).toThrowError(new Error('Invalid log level: foo'));
+			}).toThrow(new Error('Invalid log level: foo'));
 			expect(() => {
 				new SnoopLogg({ logLevel: {} as any });
-			}).toThrowError(new TypeError('Expected log level to be a string or number'));
+			}).toThrow(new TypeError('Expected log level to be a string or number'));
 		});
 
 		it('should set the default log level', () => {
@@ -516,10 +516,10 @@ describe('SnoopLogg', () => {
 			const instance = new SnoopLogg();
 			expect(() => {
 				instance.setLogLevel('foo' as any);
-			}).toThrowError(new Error('Invalid log level: foo'));
+			}).toThrow(new Error('Invalid log level: foo'));
 			expect(() => {
 				instance.setLogLevel({} as any);
-			}).toThrowError(new TypeError('Expected log level to be a string or number'));
+			}).toThrow(new TypeError('Expected log level to be a string or number'));
 		});
 
 		it('should set new log level', () => {

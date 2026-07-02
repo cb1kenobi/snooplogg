@@ -1,4 +1,4 @@
-import snooplogg, { info, log, SnoopLogg } from '../dist/index.mjs';
+import { info, log, snooplogg, SnoopLogg } from '../dist/index.mjs';
 import ansiStyles from 'ansi-styles';
 import { format } from 'node:util';
 

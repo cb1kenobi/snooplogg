@@ -1,2 +1,4 @@
 allowBuilds:
   lefthook: true
+minimumReleaseAgeExclude:
+  - '@types/node@26.1.0'

@@ -7,22 +7,20 @@ export * from './snooplogg.js';
 export { LogLevels } from './types.js';
 export { SnoopEmitter };
 
-if (!Object.getOwnPropertyDescriptor(globalThis, 'snooplogg')) {
-	Object.defineProperty(globalThis, 'snooplogg', { value: new SnoopEmitter() });
+if (!Object.getOwnPropertyDescriptor(globalThis, '__snooplogg__')) {
+	Object.defineProperty(globalThis, '__snooplogg__', { value: new SnoopEmitter() });
 }
 
-const instance: SnoopLogg = new SnoopLogg()
+export const snooplogg: SnoopLogg = new SnoopLogg()
 	.enable(process.env.SNOOPLOGG || process.env.DEBUG)
 	.pipe(process.stderr);
 
 type LogMethod = (...args: any[]) => void;
 
-export const log: LogMethod = instance.log.bind(instance);
-export const trace: LogMethod = instance.trace.bind(instance);
-export const debug: LogMethod = instance.debug.bind(instance);
-export const info: LogMethod = instance.info.bind(instance);
-export const warn: LogMethod = instance.warn.bind(instance);
-export const error: LogMethod = instance.error.bind(instance);
-export const panic: LogMethod = instance.panic.bind(instance);
-
-export default instance;
+export const log: LogMethod = snooplogg.log.bind(snooplogg);
+export const trace: LogMethod = snooplogg.trace.bind(snooplogg);
+export const debug: LogMethod = snooplogg.debug.bind(snooplogg);
+export const info: LogMethod = snooplogg.info.bind(snooplogg);
+export const warn: LogMethod = snooplogg.warn.bind(snooplogg);
+export const error: LogMethod = snooplogg.error.bind(snooplogg);
+export const panic: LogMethod = snooplogg.panic.bind(snooplogg);

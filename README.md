@@ -76,7 +76,7 @@ to create a namespaced child logger. You can have as many deeply nested
 namespaces as you'd like.
 
 ```javascript
-import snooplogg from 'snooplogg';
+import { snooplogg } from 'snooplogg';
 
 snooplogg.info('This is the default namespace');
 
