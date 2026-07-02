@@ -1,3 +1,7 @@
+# v9.0.0 (July 2, 2026)
+
+- BREAKING CHANGE: Drop CommonJS support - ESM only
+
 # v8.0.0 (July 1, 2026)
 
 - BREAKING CHANGE: Removed default export. Use `import { snooplogg } from 'snooplogg'` instead.

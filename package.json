@@ -1,6 +1,6 @@
 {
   "name": "snooplogg",
-  "version": "8.0.0",
+  "version": "9.0.0",
   "description": "Your mind on your logs and your logs on your mind",
   "keywords": [
     "console",
@@ -34,13 +34,12 @@
     "dist"
   ],
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/index.d.cts",
+  "main": "./dist/index.mjs",
+  "types": "./dist/index.d.mts",
   "exports": {
     ".": {
-      "require": "./dist/index.cjs",
-      "import": "./dist/index.mjs"
+      "types": "./dist/index.d.mts",
+      "default": "./dist/index.mjs"
     },
     "./*": "./*"
   },
