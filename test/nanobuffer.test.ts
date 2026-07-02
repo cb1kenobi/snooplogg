@@ -5,19 +5,19 @@ describe('NanoBuffer', () => {
 	it('should throw error if invalid max size', () => {
 		expect(() => {
 			new NanoBuffer('hi' as any);
-		}).toThrowError(new TypeError('Expected max size to be a number'));
+		}).toThrow(new TypeError('Expected max size to be a number'));
 	});
 
 	it('should throw error if max size is not a number', () => {
 		expect(() => {
 			new NanoBuffer(Number.NaN);
-		}).toThrowError(new RangeError('Expected max size to be zero or greater'));
+		}).toThrow(new RangeError('Expected max size to be zero or greater'));
 	});
 
 	it('should throw error if max size is negative', () => {
 		expect(() => {
 			new NanoBuffer(-123);
-		}).toThrowError(new RangeError('Expected max size to be zero or greater'));
+		}).toThrow(new RangeError('Expected max size to be zero or greater'));
 	});
 
 	it('should get the max size', () => {
@@ -93,19 +93,19 @@ describe('NanoBuffer', () => {
 	it('should throw error if invalid max size', () => {
 		expect(() => {
 			new NanoBuffer().maxSize = 'hi' as any;
-		}).toThrowError(new TypeError('Expected max size to be a number'));
+		}).toThrow(new TypeError('Expected max size to be a number'));
 	});
 
 	it('should throw error if max size is not a number', () => {
 		expect(() => {
 			new NanoBuffer().maxSize = Number.NaN;
-		}).toThrowError(new RangeError('Expected max size to be zero or greater'));
+		}).toThrow(new RangeError('Expected max size to be zero or greater'));
 	});
 
 	it('should throw error if max size is negative', () => {
 		expect(() => {
 			new NanoBuffer().maxSize = -123;
-		}).toThrowError(new RangeError('Expected max size to be zero or greater'));
+		}).toThrow(new RangeError('Expected max size to be zero or greater'));
 	});
 
 	it('should do nothing if max size is not changed', () => {
