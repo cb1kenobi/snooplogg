@@ -1,6 +1,10 @@
+# v9.0.1
+
+- chore: Update dependencies
+
 # v9.0.0 (July 2, 2026)
 
-- BREAKING CHANGE: Drop CommonJS support - ESM only
+- BREAKING CHANGE: Drop CommonJS support - ESM only.
 
 # v8.0.0 (July 1, 2026)
 
