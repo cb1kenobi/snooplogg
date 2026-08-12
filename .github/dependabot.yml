@@ -15,6 +15,3 @@ updates:
       - dependency-type: 'all'
     cooldown:
       default-days: 2
-      semver-major-days: 7
-      semver-minor-days: 5
-      semver-patch-days: 3
