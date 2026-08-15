@@ -10,8 +10,14 @@ updates:
       time: '02:34'
     commit-message:
       include: 'scope'
-      prefix: 'chore(deps): '
+      prefix: 'chore'
     allow:
-      - dependency-type: 'all'
+      - dependency-type: 'development'
     cooldown:
-      default-days: 2
+      default-days: 3
+    groups:
+      dev-dependencies:
+        dependency-type: 'development'
+        update-types:
+          - 'minor'
+          - 'patch'
