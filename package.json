@@ -58,7 +58,7 @@
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@types/node": "26.2.0",
+    "@types/node": "26.4.0",
     "@vitest/coverage-v8": "4.1.10",
     "ansi-styles": "7.0.0",
     "lefthook": "2.1.10",
