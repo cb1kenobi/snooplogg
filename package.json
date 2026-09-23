@@ -59,7 +59,7 @@
   },
   "devDependencies": {
     "@types/node": "26.4.1",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "5.0.1",
     "ansi-styles": "7.0.0",
     "lefthook": "2.1.12",
     "memory-streams": "0.1.3",
