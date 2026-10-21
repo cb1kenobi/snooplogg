@@ -59,16 +59,16 @@
   },
   "devDependencies": {
     "@types/node": "26.6.5",
-    "@vitest/coverage-v8": "5.0.3",
+    "@vitest/coverage-v8": "5.0.5",
     "ansi-styles": "7.0.0",
-    "lefthook": "2.2.1",
+    "lefthook": "2.2.2",
     "memory-streams": "0.1.3",
-    "oxfmt": "0.72.0",
-    "oxlint": "1.87.0",
+    "oxfmt": "0.73.0",
+    "oxlint": "1.88.0",
     "rimraf": "6.1.3",
     "tsdown": "0.23.1",
     "typescript": "7.0.2",
-    "vitest": "5.0.3"
+    "vitest": "5.0.5"
   },
   "engines": {
     "node": ">=18.17"
